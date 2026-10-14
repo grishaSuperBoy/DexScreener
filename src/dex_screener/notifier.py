@@ -130,7 +130,7 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
             f"• TVL пула: <b>${prev_tvl:,.0f} ➔ ${curr_tvl:,.0f}</b>\n"
             f"• Токены в пуле: <b>{base_chg:+.1f}%</b>\n\n"
             f"🛡️ <b>Качество ликвидности & Импакт:</b>\n"
-            f"• Реальный отток: <b>${real_drain:,.0f}</b> (<b>{impact_pct:.1f}%</b> от часового оборота)\n"
+            f"• Реальный отток: <b>${real_drain:,.0f}</b> (<b>{impact_pct:.1f}%</b> от оборота за {tf_label})\n"
             f"• Синхронность TVL: <b>{coherence:.2f}</b> (когерентность оттока)\n"
             f"• Активность DEX (1ч): <b>{total_txns}</b> сделок (🛒 {buys_h1} / 🏷️ {sells_h1})\n\n"
             f"📊 <b>Деривативы:</b>\n"

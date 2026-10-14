@@ -357,6 +357,7 @@ class PoolMonitor:
                 "prev_price_usd": ref_price_usd,
                 "buys_h1": buys_h1,
                 "sells_h1": sells_h1,
+                "vol_h1_usd": vol_h1,
                 "funding_rate": funding_rate,
                 "binance_funding": binance_fr,
                 "bybit_funding": bybit_fr,
