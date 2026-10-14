@@ -111,69 +111,61 @@
       <!-- Card 1: Pools & TVL (Click to show all pools) -->
       <div id="card-filter-all" onclick="setFilter('all')" class="metric-card card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-all duration-200 hover:border-blue-500/60 hover:-translate-y-0.5 border border-slate-700/60 select-none ring-2 ring-blue-500 shadow-blue-500/20">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-slate-400">Пулов в мониторинге</span>
+          <span class="text-xs font-medium text-slate-400">Пулов в Мониторе</span>
           <div class="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
               <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
             </svg>
           </div>
         </div>
-        <div class="mt-2 flex items-baseline gap-2">
+        <div class="mt-2 flex items-baseline">
           <span id="metric-total-pools" class="text-2xl font-extrabold text-white">0</span>
-          <span id="metric-total-tvl" class="text-xs text-blue-400 font-semibold font-mono">$0 TVL</span>
         </div>
-        <div class="mt-1 text-xs text-slate-500">Binance &amp; Bybit Futures + DEX Multichain</div>
       </div>
 
       <!-- Card 2: Short Alerts (Click to show short signals) -->
       <div id="card-filter-shorts" onclick="setFilter('shorts')" class="metric-card card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-all duration-200 hover:border-red-500/80 hover:-translate-y-0.5 border border-red-500/30 bg-gradient-to-br from-red-500/10 via-[#121824] to-[#121824] select-none">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-red-400">Сигналы ШОРТ</span>
+          <span class="text-xs font-semibold text-red-400">Сигналы Шорт</span>
           <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
               <path d="M16 18l2.29-2.29-4.88-4.88-4 4L2 7.41 3.41 6l6 6 4-4 6.3 6.29L22 12v6z"/>
             </svg>
           </div>
         </div>
-        <div class="mt-2 flex items-baseline gap-2">
+        <div class="mt-2 flex items-baseline">
           <span id="metric-active-shorts" class="text-2xl font-extrabold text-red-400">0</span>
-          <span id="metric-short-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">Спокойно</span>
         </div>
-        <div class="mt-1 text-xs text-slate-400">Слив ликвидности &le; -12%</div>
       </div>
 
       <!-- Card 3: Long Alerts (Click to show long signals) -->
       <div id="card-filter-longs" onclick="setFilter('longs')" class="metric-card card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-all duration-200 hover:border-emerald-500/80 hover:-translate-y-0.5 border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-[#121824] to-[#121824] select-none">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-emerald-400">Сигналы ЛОНГ / НАКОПЛЕНИЕ</span>
+          <span class="text-xs font-semibold text-emerald-400">Сигналы Лонг</span>
           <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
               <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
             </svg>
           </div>
         </div>
-        <div class="mt-2 flex items-baseline gap-2">
+        <div class="mt-2 flex items-baseline">
           <span id="metric-active-longs" class="text-2xl font-extrabold text-emerald-400">0</span>
-          <span id="metric-long-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">Спокойно</span>
         </div>
-        <div class="mt-1 text-xs text-slate-400">Тихий выкуп токенов / Заливка LP</div>
       </div>
 
       <!-- Card 4: Short Squeeze Fuel (Click to show squeeze signals) -->
       <div id="card-filter-squeeze" onclick="setFilter('squeeze')" class="metric-card card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-all duration-200 hover:border-amber-500/80 hover:-translate-y-0.5 border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-[#121824] to-[#121824] select-none">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-amber-400">Шорт-сквиз топливо</span>
+          <span class="text-xs font-semibold text-amber-400">Шорт Сквиз</span>
           <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
               <path d="M19.48 12.35c-1.57-.56-2.91-1.57-3.9-2.92C14.7 8.24 14.15 6.68 14 5c-.04-.33-.2-.64-.47-.84-.28-.2-.62-.27-.93-.2-3.17.78-5.63 2.94-6.66 5.86C5.06 12.39 5 13.18 5 14c0 3.87 3.13 7 7 7 3.48 0 6.37-2.54 6.9-5.9.06-.41-.12-.82-.47-1.05-.33-.23-.76-.26-1.12-.13-.37.13-.76.22-1.16.27.05-.28.12-.56.23-.84z"/>
             </svg>
           </div>
         </div>
-        <div class="mt-2 flex items-baseline gap-2">
+        <div class="mt-2 flex items-baseline">
           <span id="metric-squeeze-count" class="text-2xl font-extrabold text-amber-400 font-mono">0</span>
-          <span class="text-xs text-amber-400 font-semibold font-mono">FR &le; -0.02%</span>
         </div>
-        <div class="mt-1 text-xs text-slate-400">Отрицательный фандинг Binance / Bybit</div>
       </div>
     </div>
 
@@ -859,21 +851,25 @@
       if (sqEl) sqEl.innerText = activeSqueezes;
 
       const shortBadge = document.getElementById('metric-short-badge');
-      if (activeShorts > 0) {
-        shortBadge.innerText = `${activeShorts} Внимание`;
-        shortBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400';
-      } else {
-        shortBadge.innerText = 'Спокойно';
-        shortBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+      if (shortBadge) {
+        if (activeShorts > 0) {
+          shortBadge.innerText = `${activeShorts} Внимание`;
+          shortBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400';
+        } else {
+          shortBadge.innerText = 'Спокойно';
+          shortBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+        }
       }
 
       const longBadge = document.getElementById('metric-long-badge');
-      if (activeLongs > 0) {
-        longBadge.innerText = `${activeLongs} Сигнал`;
-        longBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400';
-      } else {
-        longBadge.innerText = 'Спокойно';
-        longBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+      if (longBadge) {
+        if (activeLongs > 0) {
+          longBadge.innerText = `${activeLongs} Сигнал`;
+          longBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400';
+        } else {
+          longBadge.innerText = 'Спокойно';
+          longBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+        }
       }
 
 
@@ -1339,8 +1335,10 @@
           if (data) {
             if (data.pools && data.pools.length > 0) {
               poolsData = data.pools;
-              document.getElementById('metric-total-pools').innerText = data.pools_count || poolsData.length;
-              document.getElementById('metric-total-tvl').innerText = `${formatNumber(data.total_tvl)} TVL`;
+              const pCountEl = document.getElementById('metric-total-pools');
+              if (pCountEl) pCountEl.innerText = data.pools_count || poolsData.length;
+              const tvlEl = document.getElementById('metric-total-tvl');
+              if (tvlEl) tvlEl.innerText = `${formatNumber(data.total_tvl)} TVL`;
             }
 
             if (data.signals && data.signals.length > 0) {

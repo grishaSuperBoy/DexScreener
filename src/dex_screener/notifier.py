@@ -171,9 +171,8 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
             )
 
         return (
-            f"🚨 <b>DEX RADAR | SHORT ALERT ({tf_label})</b>\n"
+            f"🚨 <b>${esc_symbol} / {esc_quote} ({exch_str}) | SHORT ALERT ({tf_label})</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🪙 <b>${esc_symbol} / {esc_quote}</b> ({exch_str})\n"
             f"⏱ Таймфрейм: {tf_badge}\n"
             f"🌐 Сеть: <code>{esc_chain}</code> • DEX: <b>{esc_dex}</b>\n"
             f"💵 Спот DEX: <code>${price_usd:.6g}</code> (<b>{price_chg:+.2f}%</b> за {tf_label})\n\n"
@@ -222,9 +221,8 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
             )
 
         return (
-            f"🟢 <b>DEX RADAR | PUMP & ACCUMULATION ({tf_label})</b>\n"
+            f"🟢 <b>${esc_symbol} / {esc_quote} ({exch_str}) | PUMP & ACCUMULATION ({tf_label})</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🪙 <b>${esc_symbol} / {esc_quote}</b> ({exch_str})\n"
             f"⏱ Таймфрейм: {tf_badge}\n"
             f"📌 Паттерн: <b>{pattern_title}</b>\n"
             f"🌐 Сеть: <code>{esc_chain}</code> • DEX: <b>{esc_dex}</b>\n"
