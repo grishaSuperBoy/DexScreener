@@ -542,8 +542,12 @@ def cmd_ui(args):
     except Exception:
         pass
 
+    class ThreadingTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        daemon_threads = True
+        allow_reuse_address = True
+
     try:
-        with socketserver.TCPServer(("", port), DashboardHandler) as httpd:
+        with ThreadingTCPServer(("", port), DashboardHandler) as httpd:
             console.print("[dim]Сервер активен. Для остановки нажмите Ctrl+C[/dim]")
             httpd.serve_forever()
     except KeyboardInterrupt:

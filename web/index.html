@@ -296,8 +296,7 @@
       <div class="card-surface rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 border border-slate-700/80">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div class="flex items-center gap-3">
-            <div id="modal-icon" class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold text-base">
-              T
+            <div id="modal-icon" class="shrink-0">
             </div>
             <div>
               <h3 id="modal-title" class="font-bold text-lg text-white">TOKEN / USDT</h3>
@@ -541,6 +540,50 @@
       return '';
     }
 
+    // =========================================================================
+    // TOKEN LOGO SERVICE (Multi-Tier CDN Fallback: CoinCap -> CryptoIcons -> Initial)
+    // =========================================================================
+    function getCleanSymbol(sym) {
+      if (!sym) return '';
+      let s = sym.toUpperCase();
+      if (s.startsWith('1000000')) s = s.slice(7);
+      else if (s.startsWith('100000')) s = s.slice(6);
+      else if (s.startsWith('10000')) s = s.slice(5);
+      else if (s.startsWith('1000')) s = s.slice(4);
+      else if (s.startsWith('100')) s = s.slice(3);
+      else if (s.startsWith('K') && s.length > 3 && s === s.toUpperCase()) s = s.slice(1);
+      return s;
+    }
+
+    function handleLogoError(img, sym) {
+      const step = img.dataset.step || '1';
+      const s = (sym || '').toLowerCase();
+      if (step === '1') {
+        img.dataset.step = '2';
+        img.src = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s}.png`;
+      } else {
+        img.style.display = 'none';
+      }
+    }
+
+    function renderCoinAvatar(symbol, sizeClass = 'w-8 h-8', textClass = 'text-xs') {
+      const sym = symbol || '?';
+      const clean = getCleanSymbol(sym);
+      const letter = sym.charAt(0);
+      return `
+        <div class="relative ${sizeClass} rounded-xl bg-[#182234] border border-slate-700/60 flex items-center justify-center font-bold ${textClass} text-amber-400 shadow-sm shrink-0 overflow-hidden select-none">
+          <span>${letter}</span>
+          <img 
+            src="https://assets.coincap.io/assets/icons/${clean.toLowerCase()}@2x.png" 
+            alt="${sym}" 
+            class="w-full h-full object-contain p-1 rounded-xl absolute inset-0 bg-[#182234]"
+            loading="lazy"
+            onerror="handleLogoError(this, '${clean}')" 
+          />
+        </div>
+      `;
+    }
+
     function toggleSort(col) {
       if (sortColumn === col) {
         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -759,7 +802,10 @@
                   ${s.direction}
                 </span>
                 ${tfBadge}
-                <span class="text-xs font-mono font-bold text-white">${s.symbol} / ${s.quote_sym || 'USDT'}</span>
+                <div class="inline-flex items-center gap-1.5">
+                  ${renderCoinAvatar(s.symbol, 'w-5 h-5', 'text-[10px]')}
+                  <span class="text-xs font-mono font-bold text-white">${s.symbol} / ${s.quote_sym || 'USDT'}</span>
+                </div>
                 ${exchBadges}
                 <span class="text-[10px] text-slate-400 font-mono">(${s.chain}/${s.dex_id || 'dex'})</span>
               </div>
@@ -1075,9 +1121,7 @@
         tr.innerHTML = `
           <td class="py-3.5 px-4 font-semibold whitespace-nowrap min-w-[280px]">
             <div class="flex items-center gap-3 flex-nowrap">
-              <span class="w-8 h-8 rounded-xl bg-[#182234] border border-slate-700/60 flex items-center justify-center font-bold text-xs text-amber-400 shadow-sm shrink-0">
-                ${(p.symbol || '?').charAt(0)}
-              </span>
+              ${renderCoinAvatar(p.symbol, 'w-8 h-8', 'text-xs')}
               <div class="min-w-0">
                 <div class="flex items-center gap-2 flex-nowrap whitespace-nowrap">
                   <span class="font-bold text-white text-sm tracking-wide shrink-0">${p.symbol}</span>
@@ -1142,7 +1186,7 @@
       const hasBinance = exchs.includes('binance');
       const hasBybit = exchs.includes('bybit');
 
-      icon.innerText = (p.symbol || '?').charAt(0);
+      icon.innerHTML = renderCoinAvatar(p.symbol, 'w-10 h-10', 'text-base');
       title.innerText = `${p.symbol} / ${p.quote_symbol || 'USDT'}`;
       sub.innerText = `${(p.chain || '').toUpperCase()} • ${(p.dex || '').toUpperCase()} (${(p.pair_address || '').slice(0, 6)}...${(p.pair_address || '').slice(-4)})`;
       dexLink.href = p.url || '#';
