@@ -295,7 +295,7 @@
         <table class="w-full text-left text-xs sm:text-sm border-collapse">
           <thead>
             <tr class="border-b border-slate-800 bg-[#0e1420]/80 text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-              <th onclick="toggleSort('symbol')" class="py-3.5 px-4 cursor-pointer hover:text-white transition-base select-none">
+              <th onclick="toggleSort('symbol')" class="py-3.5 px-4 cursor-pointer hover:text-white transition-base select-none whitespace-nowrap min-w-[280px]">
                 Монета / Биржи <span id="sort-symbol"></span>
               </th>
               <th onclick="toggleSort('chain')" class="py-3.5 px-3 cursor-pointer hover:text-white transition-base select-none">
@@ -1101,17 +1101,17 @@
         const tvUrl = getTradingViewLink(p.symbol, exchs);
         const cgUrl = getCoinGlassLink(p.symbol, exchs);
 
-        let exchBadgesHtml = '<div class="inline-flex items-center gap-1 flex-wrap">';
+        let exchBadgesHtml = '<div class="inline-flex items-center gap-1.5 flex-nowrap whitespace-nowrap shrink-0">';
         if (hasBinance) {
           exchBadgesHtml += `
-            <a href="${binancePerpUrl}" target="_blank" onclick="event.stopPropagation()" title="Binance Futures (${p.symbol}USDT Perp)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/35 border border-yellow-500/40 transition-base cursor-pointer">
+            <a href="${binancePerpUrl}" target="_blank" onclick="event.stopPropagation()" title="Binance Futures (${p.symbol}USDT Perp)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/35 border border-yellow-500/40 transition-base cursor-pointer shrink-0">
               BIN
             </a>
           `;
         }
         if (hasBybit) {
           exchBadgesHtml += `
-            <a href="${bybitPerpUrl}" target="_blank" onclick="event.stopPropagation()" title="Bybit Futures (${p.symbol}USDT Perp)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 hover:bg-orange-500/35 border border-orange-500/40 transition-base cursor-pointer">
+            <a href="${bybitPerpUrl}" target="_blank" onclick="event.stopPropagation()" title="Bybit Futures (${p.symbol}USDT Perp)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 hover:bg-orange-500/35 border border-orange-500/40 transition-base cursor-pointer shrink-0">
               BYB
             </a>
           `;
@@ -1119,7 +1119,7 @@
         if (tvUrl) {
           const tvExch = hasBybit ? 'BYBIT' : 'BINANCE';
           exchBadgesHtml += `
-            <a href="${tvUrl}" target="_blank" onclick="event.stopPropagation()" title="TradingView Perp Chart (${tvExch}:${p.symbol}USDT.P)" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#2962FF]/20 text-[#3b82f6] hover:bg-[#2962FF]/35 hover:text-blue-300 border border-[#2962FF]/40 transition-base cursor-pointer">
+            <a href="${tvUrl}" target="_blank" onclick="event.stopPropagation()" title="TradingView Perp Chart (${tvExch}:${p.symbol}USDT.P)" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#2962FF]/20 text-[#3b82f6] hover:bg-[#2962FF]/35 hover:text-blue-300 border border-[#2962FF]/40 transition-base cursor-pointer shrink-0">
               <svg viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5"><path d="M4 19h4V5H4v14zm6 0h4V9h-4v10zm6 0h4v-6h-4v6z"/></svg>
               <span>TV</span>
             </a>
@@ -1128,7 +1128,7 @@
         if (cgUrl) {
           const cgExch = hasBinance ? 'Binance' : 'Bybit';
           exchBadgesHtml += `
-            <a href="${cgUrl}" target="_blank" onclick="event.stopPropagation()" title="CoinGlass Perp Chart (${cgExch}_${p.symbol}USDT)" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/35 hover:text-cyan-300 border border-cyan-500/40 transition-base cursor-pointer">
+            <a href="${cgUrl}" target="_blank" onclick="event.stopPropagation()" title="CoinGlass Perp Chart (${cgExch}_${p.symbol}USDT)" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/35 hover:text-cyan-300 border border-cyan-500/40 transition-base cursor-pointer shrink-0">
               <svg viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
               <span>CG</span>
             </a>
@@ -1264,19 +1264,19 @@
         };
 
         tr.innerHTML = `
-          <td class="py-3.5 px-4 font-semibold">
-            <div class="flex items-center gap-2.5">
+          <td class="py-3.5 px-4 font-semibold whitespace-nowrap min-w-[280px]">
+            <div class="flex items-center gap-3 flex-nowrap">
               <span class="w-8 h-8 rounded-xl bg-[#182234] border border-slate-700/60 flex items-center justify-center font-bold text-xs text-amber-400 shadow-sm shrink-0">
                 ${(p.symbol || '?').charAt(0)}
               </span>
-              <div>
-                <div class="font-bold text-white flex items-center gap-1.5 text-sm">
-                  <span>${p.symbol}</span>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-nowrap whitespace-nowrap">
+                  <span class="font-bold text-white text-sm tracking-wide shrink-0">${p.symbol}</span>
+                  ${isShort ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse-fast shadow-md shadow-red-500 shrink-0" title="Шорт-сигнал"></span>' : ''}
+                  ${isLong ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse-fast shadow-md shadow-emerald-500 shrink-0" title="Лонг-сигнал"></span>' : ''}
                   ${exchBadgesHtml}
-                  ${isShort ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse-fast shadow-md shadow-red-500"></span>' : ''}
-                  ${isLong ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse-fast shadow-md shadow-emerald-500"></span>' : ''}
                 </div>
-                <div class="text-[11px] text-slate-400 font-mono">
+                <div class="text-[11px] text-slate-400 font-mono whitespace-nowrap mt-0.5">
                   ${volSub}
                 </div>
               </div>
