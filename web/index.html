@@ -314,6 +314,9 @@
               <th onclick="toggleSort('price_usd')" class="py-3.5 px-3 text-right cursor-pointer hover:text-white transition-base select-none">
                 Цена DEX <span id="sort-price_usd"></span>
               </th>
+              <th onclick="toggleSort('signal_time')" class="py-3.5 px-3 text-center cursor-pointer hover:text-white transition-base select-none">
+                Время срабатывания <span id="sort-signal_time"></span>
+              </th>
               <th class="py-3.5 px-3 text-center">Статус</th>
               <th class="py-3.5 px-4 text-right">Действие</th>
             </tr>
@@ -682,6 +685,7 @@
       const target = poolsData.find(p => p.symbol === 'PEPE') || poolsData[0];
       if (target) {
         target.is_short = true;
+        target.signal_time = Math.floor(Date.now() / 1000);
         target.quote_delta_pct = -18.4;
         target.price_delta_pct = 0.52;
         target.prev_liquidity_usd = target.liquidity_usd;
@@ -914,7 +918,7 @@
       const search = (document.getElementById('search-input').value || '').trim().toUpperCase();
 
       // Update sort indicators
-      ['symbol', 'chain', 'liquidity_usd', 'quote_delta_pct', 'funding_rate', 'price_usd'].forEach(c => {
+      ['symbol', 'chain', 'liquidity_usd', 'quote_delta_pct', 'funding_rate', 'price_usd', 'signal_time'].forEach(c => {
         const span = document.getElementById(`sort-${c}`);
         if (span) {
           span.innerText = sortColumn === c ? (sortDirection === 'asc' ? '▲' : '▼') : '';
@@ -1105,6 +1109,36 @@
           </a>
         `;
 
+        // Signal time formatting
+        let timeCellHtml = '<span class="text-slate-600 font-mono text-xs">—</span>';
+        if (p.signal_time) {
+          const d = new Date(p.signal_time * 1000);
+          const timeOnly = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const dateOnly = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+          const secAgo = Math.max(0, Math.floor(Date.now() / 1000 - p.signal_time));
+          let relTime = '';
+          if (secAgo < 60) {
+            relTime = `${secAgo}с назад`;
+          } else if (secAgo < 3600) {
+            relTime = `${Math.floor(secAgo / 60)}м назад`;
+          } else if (secAgo < 86400) {
+            relTime = `${Math.floor(secAgo / 3600)}ч назад`;
+          } else {
+            relTime = `${Math.floor(secAgo / 86400)}д назад`;
+          }
+
+          const highlightClass = isShort
+            ? 'text-red-400 font-bold'
+            : (isLong ? 'text-emerald-400 font-bold' : 'text-slate-300 font-medium');
+
+          timeCellHtml = `
+            <div class="text-center font-mono inline-block" title="${dateOnly} ${timeOnly}">
+              <div class="text-xs ${highlightClass}">${timeOnly}</div>
+              <div class="text-[10px] text-slate-500">${relTime}</div>
+            </div>
+          `;
+        }
+
         const tr = document.createElement('tr');
         tr.className = `${rowClass} cursor-pointer`;
         tr.onclick = (e) => {
@@ -1172,6 +1206,10 @@
           </td>
 
           <td class="py-3.5 px-3 text-center">
+            ${timeCellHtml}
+          </td>
+
+          <td class="py-3.5 px-3 text-center">
             ${statusBadge}
           </td>
 
@@ -1226,6 +1264,17 @@
       const priceChg = p.price_delta_pct || 0;
       const frStr = typeof p.funding_rate === 'number' ? `${p.funding_rate > 0 ? '+' : ''}${p.funding_rate.toFixed(4)}%` : 'н/д';
 
+      let timeBadgeHtml = '';
+      if (p.signal_time) {
+        const d = new Date(p.signal_time * 1000);
+        timeBadgeHtml = `
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-slate-700/60 font-mono text-[11px] text-slate-200 mt-2">
+            <span>⏱️ Время срабатывания:</span>
+            <span class="text-amber-400 font-bold">${d.toLocaleString('ru-RU')}</span>
+          </div>
+        `;
+      }
+
       let alertBannerHtml = '';
       if (isShort) {
         alertBannerHtml = `
@@ -1238,6 +1287,7 @@
               <div class="text-[11px] text-slate-300 mt-0.5">
                 Из пула выведено <b>${Math.abs(deltaVal).toFixed(1)}%</b> резерва ${p.quote_symbol}, а спотовая цена изменилась на <b>${priceChg > 0 ? '+' : ''}${priceChg.toFixed(2)}%</b>. Рекомендуется проверить шорт-позицию.
               </div>
+              ${timeBadgeHtml}
             </div>
           </div>
         `;
@@ -1252,6 +1302,7 @@
               <div class="text-[11px] text-slate-300 mt-0.5">
                 Приток стейблов (+${deltaVal.toFixed(1)}%) и активный выкуп токенов из пула без резкого скачка цены.
               </div>
+              ${timeBadgeHtml}
             </div>
           </div>
         `;

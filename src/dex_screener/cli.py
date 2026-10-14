@@ -481,6 +481,11 @@ def cmd_ui(args):
                     is_short = is_short or bool(recent_sig and recent_sig.get("direction") == "SHORT")
                     sig_direction = recent_sig.get("direction") if recent_sig else ("SHORT" if is_short else None)
                     sig_pattern = recent_sig.get("pattern") if recent_sig else ("LIQ_DRAIN" if is_short else None)
+                    sig_time = None
+                    if recent_sig and recent_sig.get("timestamp"):
+                        sig_time = float(recent_sig["timestamp"])
+                    elif is_short or is_long:
+                        sig_time = float(st.get("last_alert_at") or time.time())
 
                     pools_list.append({
                         "symbol": info.get("symbol"),
@@ -516,6 +521,7 @@ def cmd_ui(args):
                         "is_long": is_long,
                         "signal_direction": sig_direction,
                         "signal_pattern": sig_pattern,
+                        "signal_time": sig_time,
                     })
 
                 self._send_json({
