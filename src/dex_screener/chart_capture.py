@@ -101,8 +101,21 @@ def capture_price_chart(
                             break
 
                     if canvas_ready:
-                        # 1.5 сек пауза для окончательной прорисовки тел свечей
-                        page.wait_for_timeout(1500)
+                        # 1.2 сек пауза для окончательной прорисовки тел свечей
+                        page.wait_for_timeout(1200)
+
+                        # Смещаем график влево на ~25% ширины (300px), создавая свободное пространство перед свечами
+                        try:
+                            page.mouse.move(800, 360)
+                            page.mouse.down()
+                            page.mouse.move(500, 360, steps=12)
+                            page.mouse.up()
+                            # Отводим курсор за пределы графика, чтобы скрыть перекрестие и тултипы
+                            page.mouse.move(0, 0)
+                            page.wait_for_timeout(600)
+                        except Exception as drag_err:
+                            logger.debug(f"Не удалось сместить график влево: {drag_err}")
+
                         screenshot_bytes = page.screenshot(type="png")
                         page.close()
                         browser.close()
