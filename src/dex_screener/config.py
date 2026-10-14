@@ -26,9 +26,17 @@ class Settings(BaseSettings):
 
     # Пороги для ШОРТА (Вывод ликвидности)
     liq_drop_threshold_pct: float = -12.0  # Падение стейблов в пуле (-12% и сильнее)
-    max_price_drop_pct: float = -2.5  # Нижний порог цены (еще не упала ниже -2.5%)
+    max_price_drop_pct: float = -4.5  # Нижний порог цены (еще не упала ниже -4.5%)
     max_price_pump_pct: float = 4.0  # Верхний порог цены (не улетела выше +4.0%)
     track_mode: Literal["quote", "usd", "both"] = "quote"
+
+    # Z-Score Engine (Статистический анализ аномалий)
+    enable_z_score_mode: bool = True  # Использовать динамический Z-Score анализ вместо жестких %
+    z_short_threshold: float = -2.2  # Статистический порог слива (резервы упали на >= 2.2 сигмы)
+    z_price_lag_max: float = 1.2  # Допустимый лаг цены в сигмах (цена не обвалилась)
+    z_long_quote_threshold: float = 2.0  # Порог аномального притока стейблов (+2.0 сигмы)
+    z_long_base_threshold: float = -1.8  # Порог аномального выгребания токенов (-1.8 сигмы)
+    z_min_samples: int = 8  # Минимальное кол-во слепков для достоверного расчета Z-Score
 
     # Динамические фильтры качества ликвидности (Защита от фейковых и мертвых пулов)
     min_drain_coherence_ratio: float = 0.25  # Синхронность: TVL должен упасть хотя бы на 25% от падения котировки
@@ -43,7 +51,7 @@ class Settings(BaseSettings):
     lp_inject_base_pct: float = 8.0  # Тихая заливка LP: токены тоже выросли на +8%+
     stealth_buy_quote_pct: float = 8.0  # Скрытый выкуп: стейблы +8%+
     stealth_buy_base_drop_pct: float = -6.0  # Скрытый выкуп: токены выгребли из пула на -6%+
-    stealth_buy_max_price_pct: float = 3.5  # Цена еще на старте (не выше +3.5%, чтобы не покупать хаи)
+    stealth_buy_max_price_pct: float = 7.5  # Цена еще на старте (не выше +7.5%, с учетом механики AMM)
     stealth_buy_min_tx_ratio: float = 1.7  # Перевес покупок над продажами (buys / sells >= 1.7)
     stealth_buy_min_buys_h1: int = 25  # Минимум 25 покупок за час (живой пул)
     squeeze_funding_threshold_pct: float = -0.02  # Отрицательный фандинг (< -0.02%) = топливо для шорт-сквиза

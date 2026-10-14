@@ -7,6 +7,7 @@ from rich.table import Table
 
 from dex_screener.config import Settings
 from dex_screener.dexscreener import safe_float
+from dex_screener.math_utils import eval_long_z_anomaly, eval_short_z_anomaly
 from dex_screener.notifier import notify_signal
 from dex_screener.storage import append_and_prune_signals
 
@@ -173,8 +174,24 @@ class PoolMonitor:
                         else:
                             primary_drop = short_quote_chg
 
-                        is_liq_drained = primary_drop <= (self.settings.liq_drop_threshold_pct * tf_mult)
-                        is_price_lagging = self.settings.max_price_drop_pct <= short_price_chg <= max_pump_pct
+                        z_metrics = {}
+                        if self.settings.enable_z_score_mode and len(tf_history) >= self.settings.z_min_samples:
+                            is_z_short, z_metrics = eval_short_z_anomaly(
+                                history_snapshots=tf_history,
+                                current_quote_res=quote_res,
+                                current_price_usd=price_usd,
+                                current_tvl_usd=liq_usd,
+                                z_short_threshold=self.settings.z_short_threshold * (1.15 if tf_name == "3h" else 1.0),
+                                z_price_lag_max=self.settings.z_price_lag_max,
+                                max_price_drop_pct=self.settings.max_price_drop_pct,
+                                min_economic_drop_pct=self.settings.liq_drop_threshold_pct * 0.5,
+                                min_samples=self.settings.z_min_samples,
+                            )
+                            is_liq_drained = is_z_short
+                            is_price_lagging = is_z_short
+                        else:
+                            is_liq_drained = primary_drop <= (self.settings.liq_drop_threshold_pct * tf_mult)
+                            is_price_lagging = self.settings.max_price_drop_pct <= short_price_chg <= max_pump_pct
 
                     if is_liq_drained and is_price_lagging:
                         coherence_ratio = (
@@ -226,6 +243,10 @@ class PoolMonitor:
                                 "curr_tvl_usd": liq_usd,
                                 "price_usd": price_usd,
                                 "price_chg": round(short_price_chg, 2),
+                                "z_quote": z_metrics.get("z_quote"),
+                                "z_price": z_metrics.get("z_price"),
+                                "z_tvl": z_metrics.get("z_tvl"),
+                                "z_divergence": z_metrics.get("z_divergence"),
                                 "buys_h1": buys_h1,
                                 "sells_h1": sells_h1,
                                 "vol_h1_usd": vol_h1,
@@ -270,6 +291,8 @@ class PoolMonitor:
                         long_usd_chg = ((liq_usd - min_liq_usd) / min_liq_usd) * 100.0 if min_liq_usd > 0 else 0.0
                         long_price_chg = ((price_usd - min_price_usd) / min_price_usd) * 100.0 if min_price_usd > 0 else 0.0
 
+                        tx_ratio = (buys_h1 / sells_h1) if sells_h1 > 0 else float(buys_h1)
+
                         # Паттерн 1: Тихая заливка LP (с учетом множителя окна tf_mult)
                         is_silent_lp_add = (
                             long_quote_chg >= (self.settings.lp_inject_quote_pct * tf_mult)
@@ -277,15 +300,31 @@ class PoolMonitor:
                             and -2.5 <= long_price_chg <= 3.5
                         )
 
-                        # Паттерн 2: Скрытый пылесос (с учетом множителя окна tf_mult)
-                        tx_ratio = (buys_h1 / sells_h1) if sells_h1 > 0 else float(buys_h1)
-                        is_stealth_buy = (
-                            long_quote_chg >= (self.settings.stealth_buy_quote_pct * tf_mult)
-                            and long_base_chg <= (self.settings.stealth_buy_base_drop_pct * tf_mult)
-                            and 0.2 <= long_price_chg <= self.settings.stealth_buy_max_price_pct
-                            and tx_ratio >= self.settings.stealth_buy_min_tx_ratio
-                            and buys_h1 >= self.settings.stealth_buy_min_buys_h1
-                        )
+                        # Паттерн 2: Скрытый пылесос (с учетом множителя окна tf_mult или Z-Score)
+                        z_long_metrics = {}
+                        if self.settings.enable_z_score_mode and len(tf_history) >= self.settings.z_min_samples:
+                            is_z_long, z_long_metrics = eval_long_z_anomaly(
+                                history_snapshots=tf_history,
+                                current_quote_res=quote_res,
+                                current_base_res=base_res,
+                                current_price_usd=price_usd,
+                                z_quote_threshold=self.settings.z_long_quote_threshold,
+                                z_base_threshold=self.settings.z_long_base_threshold,
+                                z_price_max=self.settings.z_price_lag_max,
+                                max_price_gain_pct=self.settings.stealth_buy_max_price_pct,
+                                min_economic_gain_pct=self.settings.stealth_buy_quote_pct * 0.6,
+                                min_samples=self.settings.z_min_samples,
+                            )
+                            # При статистической аномалии требуем минимальной активности покупателей
+                            is_stealth_buy = is_z_long and (tx_ratio >= 1.3 or buys_h1 >= 15)
+                        else:
+                            is_stealth_buy = (
+                                long_quote_chg >= (self.settings.stealth_buy_quote_pct * tf_mult)
+                                and long_base_chg <= (self.settings.stealth_buy_base_drop_pct * tf_mult)
+                                and 0.2 <= long_price_chg <= self.settings.stealth_buy_max_price_pct
+                                and tx_ratio >= self.settings.stealth_buy_min_tx_ratio
+                                and buys_h1 >= self.settings.stealth_buy_min_buys_h1
+                            )
 
                         if is_silent_lp_add or is_stealth_buy:
                             pattern_code = "SILENT_LP_ADD" if is_silent_lp_add else "STEALTH_ACCUMULATION"
@@ -315,6 +354,9 @@ class PoolMonitor:
                                 "curr_tvl_usd": liq_usd,
                                 "price_usd": price_usd,
                                 "price_chg": round(long_price_chg, 2),
+                                "z_quote": z_long_metrics.get("z_quote"),
+                                "z_base": z_long_metrics.get("z_base"),
+                                "z_price": z_long_metrics.get("z_price"),
                                 "buys_h1": buys_h1,
                                 "sells_h1": sells_h1,
                                 "vol_h1_usd": vol_h1,

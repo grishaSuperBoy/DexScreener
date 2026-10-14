@@ -117,7 +117,21 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
     impact_pct = float(sig.get("impact_ratio_pct", 0.0))
     total_txns = int(sig.get("total_txns_h1", buys_h1 + sells_h1))
 
+    z_quote = sig.get("z_quote")
+    z_base = sig.get("z_base")
+    z_price = sig.get("z_price")
+    z_div = sig.get("z_divergence")
+
     if direction == "SHORT":
+        z_block = ""
+        if z_quote is not None and z_price is not None:
+            z_block = (
+                f"📐 <b>Статистический Z-Score:</b>\n"
+                f"• Аномалия резервов: <b>{z_quote:+.2f}σ</b> (стат. выброс)\n"
+                f"• Лаг спот-цены: <b>{z_price:+.2f}σ</b>\n"
+                f"• Z-Дивергенция: <b>+{z_div:.2f}σ</b> (опережение цены)\n\n"
+            )
+
         return (
             f"🚨 <b>DEX RADAR | SHORT ALERT ({tf_label})</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -129,6 +143,7 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
             f"• Резерв {esc_quote}: <b>{quote_chg:+.1f}%</b> ({prev_q:,.0f} → {curr_q:,.0f})\n"
             f"• TVL пула: <b>${prev_tvl:,.0f} ➔ ${curr_tvl:,.0f}</b>\n"
             f"• Токены в пуле: <b>{base_chg:+.1f}%</b>\n\n"
+            f"{z_block}"
             f"🛡️ <b>Качество ликвидности & Импакт:</b>\n"
             f"• Реальный отток: <b>${real_drain:,.0f}</b> (<b>{impact_pct:.1f}%</b> от оборота за {tf_label})\n"
             f"• Синхронность TVL: <b>{coherence:.2f}</b> (когерентность оттока)\n"
@@ -146,6 +161,17 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
         else:
             pattern_title = "СКРЫТЫЙ ВЫКУП (Пылесос токенов)"
             strategy_tip = f"Базовые токены выкупаются из пула за {tf_label}. Перевес покупателей x{tx_ratio:.1f}."
+
+        z_block = ""
+        if z_quote is not None:
+            base_line = f"• Токены в пуле: <b>{z_base:+.2f}σ</b> (выгребание)\n" if z_base is not None else ""
+            price_line = f"• Спот-цена: <b>{z_price:+.2f}σ</b> (ранняя точка)\n" if z_price is not None else ""
+            z_block = (
+                f"📐 <b>Статистический Z-Score:</b>\n"
+                f"• Приток стейблов: <b>{z_quote:+.2f}σ</b>\n"
+                f"{base_line}"
+                f"{price_line}\n"
+            )
 
         squeeze_block = ""
         if is_squeeze_fuel:
@@ -169,6 +195,7 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
             f"• Приток стейблов: <b>{quote_chg:+.1f}%</b> ({prev_q:,.0f} → {curr_q:,.0f})\n"
             f"• Токены в пуле: <b>{base_chg:+.1f}%</b>\n"
             f"• TVL пула: <b>${prev_tvl:,.0f} ➔ ${curr_tvl:,.0f}</b>\n\n"
+            f"{z_block}"
             f"⚡ <b>Активность & Фандинг:</b>\n"
             f"• Сделки (1ч): 🛒 <b>{buys_h1}</b> пок. / 🏷️ <b>{sells_h1}</b> прод. (x{tx_ratio:.1f})\n"
             f"• Объём (1ч): <b>${vol_h1:,.0f}</b>\n"

@@ -131,6 +131,13 @@ def format_signal_for_mongo(sig: Dict[str, Any]) -> Dict[str, Any]:
                 "quote_tvl_share_pct": sig.get("quote_tvl_share_pct"),
                 "total_txns_h1": sig.get("total_txns_h1"),
             },
+            "z_scores": {
+                "z_quote": sig.get("z_quote"),
+                "z_base": sig.get("z_base"),
+                "z_price": sig.get("z_price"),
+                "z_tvl": sig.get("z_tvl"),
+                "z_divergence": sig.get("z_divergence"),
+            },
             "funding": {
                 "primary_rate_pct": sig.get("funding_rate"),
                 "binance_rate_pct": sig.get("binance_funding"),
