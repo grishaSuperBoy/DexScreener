@@ -108,8 +108,8 @@
 
     <!-- KPI Metric Cards Grid (4 Cards) -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      <!-- Card 1: Pools & TVL -->
-      <div class="card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden">
+      <!-- Card 1: Pools & TVL (Click to show all pools) -->
+      <div id="card-filter-all" onclick="setFilter('all')" class="metric-card card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-all duration-200 hover:border-blue-500/60 hover:-translate-y-0.5 border border-slate-700/60 select-none ring-2 ring-blue-500 shadow-blue-500/20">
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-slate-400">Пулов в мониторинге</span>
           <div class="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">
@@ -125,8 +125,8 @@
         <div class="mt-1 text-xs text-slate-500">Binance &amp; Bybit Futures + DEX Multichain</div>
       </div>
 
-      <!-- Card 2: Short Alerts -->
-      <div class="card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden border-red-500/30 bg-gradient-to-br from-red-500/10 via-[#121824] to-[#121824]">
+      <!-- Card 2: Short Alerts (Click to show short signals) -->
+      <div id="card-filter-shorts" onclick="setFilter('shorts')" class="metric-card card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-all duration-200 hover:border-red-500/80 hover:-translate-y-0.5 border border-red-500/30 bg-gradient-to-br from-red-500/10 via-[#121824] to-[#121824] select-none">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold text-red-400">Сигналы ШОРТ</span>
           <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center">
@@ -142,8 +142,8 @@
         <div class="mt-1 text-xs text-slate-400">Слив ликвидности &le; -12%</div>
       </div>
 
-      <!-- Card 3: Long Alerts (Accumulation / LP) -->
-      <div class="card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-[#121824] to-[#121824]">
+      <!-- Card 3: Long Alerts (Click to show long signals) -->
+      <div id="card-filter-longs" onclick="setFilter('longs')" class="metric-card card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-all duration-200 hover:border-emerald-500/80 hover:-translate-y-0.5 border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-[#121824] to-[#121824] select-none">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold text-emerald-400">Сигналы ЛОНГ / НАКОПЛЕНИЕ</span>
           <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
@@ -159,8 +159,8 @@
         <div class="mt-1 text-xs text-slate-400">Тихий выкуп токенов / Заливка LP</div>
       </div>
 
-      <!-- Card 4: Short Squeeze Fuel -->
-      <div class="card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-[#121824] to-[#121824]">
+      <!-- Card 4: Short Squeeze Fuel (Click to show squeeze signals) -->
+      <div id="card-filter-squeeze" onclick="setFilter('squeeze')" class="metric-card card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-all duration-200 hover:border-amber-500/80 hover:-translate-y-0.5 border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-[#121824] to-[#121824] select-none">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold text-amber-400">Шорт-сквиз топливо</span>
           <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
@@ -174,32 +174,6 @@
           <span class="text-xs text-amber-400 font-semibold font-mono">FR &le; -0.02%</span>
         </div>
         <div class="mt-1 text-xs text-slate-400">Отрицательный фандинг Binance / Bybit</div>
-      </div>
-    </div>
-
-    <!-- Active Signals Alert Banner (Shown when short/long signals active) -->
-    <div id="signals-banner" class="hidden rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl border">
-      <div class="flex items-center gap-3">
-        <div id="banner-icon-box" class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shrink-0">
-          <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 animate-pulse-fast">
-            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-          </svg>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h3 id="signals-banner-title" class="font-bold text-base">Внимание: обнаружена ончейн активность!</h3>
-            <span id="signals-banner-badge" class="text-xs px-2 py-0.5 rounded font-mono font-bold">RADAR ALERT</span>
-          </div>
-          <p id="signals-banner-desc" class="text-xs text-slate-300 mt-0.5">
-            Зафиксированы отклонения в резервах DEX-пулов относительно фьючерсов Binance / Bybit.
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2 shrink-0">
-        <button onclick="setFilter('alerts')" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-base cursor-pointer shadow-md">
-          Показать алерты
-        </button>
       </div>
     </div>
 
@@ -684,6 +658,8 @@
 
     function setFilter(filter) {
       currentFilter = filter;
+
+      // Update filter chips styling
       document.querySelectorAll('.filter-chip').forEach(btn => {
         btn.classList.remove(
           'bg-amber-500', 'text-slate-950', 'shadow-md', 'shadow-amber-500/10',
@@ -709,6 +685,30 @@
           activeBtn.classList.add('bg-amber-500', 'text-slate-950', 'shadow-md', 'shadow-amber-500/10');
         }
       }
+
+      // Update top metric cards active state
+      ['all', 'shorts', 'longs', 'squeeze'].forEach(f => {
+        const card = document.getElementById(`card-filter-${f}`);
+        if (card) {
+          card.classList.remove(
+            'ring-2', 'ring-blue-500', 'ring-red-500', 'ring-emerald-500', 'ring-amber-500',
+            'shadow-blue-500/20', 'shadow-red-500/25', 'shadow-emerald-500/25', 'shadow-amber-500/25'
+          );
+        }
+      });
+      const activeCard = document.getElementById(`card-filter-${filter}`);
+      if (activeCard) {
+        if (filter === 'all') {
+          activeCard.classList.add('ring-2', 'ring-blue-500', 'shadow-blue-500/20');
+        } else if (filter === 'shorts') {
+          activeCard.classList.add('ring-2', 'ring-red-500', 'shadow-red-500/25');
+        } else if (filter === 'longs') {
+          activeCard.classList.add('ring-2', 'ring-emerald-500', 'shadow-emerald-500/25');
+        } else if (filter === 'squeeze') {
+          activeCard.classList.add('ring-2', 'ring-amber-500', 'shadow-amber-500/25');
+        }
+      }
+
       renderTable();
     }
 
@@ -940,40 +940,7 @@
         longBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
       }
 
-      // Top Banner
-      const banner = document.getElementById('signals-banner');
-      const bannerBox = document.getElementById('banner-icon-box');
-      const bannerTitle = document.getElementById('signals-banner-title');
-      const bannerBadge = document.getElementById('signals-banner-badge');
-      const bannerDesc = document.getElementById('signals-banner-desc');
 
-      if (activeShorts > 0 || activeLongs > 0) {
-        banner.classList.remove('hidden');
-        if (activeShorts > 0 && activeLongs === 0) {
-          banner.className = 'bg-gradient-to-r from-red-500/25 via-red-500/15 to-[#121824] border border-red-500/40 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl';
-          bannerBox.className = 'w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-lg shrink-0';
-          bannerTitle.innerText = `Обнаружен слив ликвидности (${activeShorts} пулов)!`;
-          bannerBadge.className = 'text-xs px-2 py-0.5 rounded bg-red-500/25 text-red-300 font-mono font-bold';
-          bannerBadge.innerText = 'SHORT OPPORTUNITY';
-          bannerDesc.innerText = 'Резервы DEX-пула выведены, но цена на фьючерсах Binance / Bybit ещё не упала.';
-        } else if (activeLongs > 0 && activeShorts === 0) {
-          banner.className = 'bg-gradient-to-r from-emerald-500/25 via-emerald-500/15 to-[#121824] border border-emerald-500/40 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl';
-          bannerBox.className = 'w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shrink-0';
-          bannerTitle.innerText = `Обнаружено скрытое накопление (${activeLongs} пулов)!`;
-          bannerBadge.className = 'text-xs px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 font-mono font-bold';
-          bannerBadge.innerText = 'LONG / PUMP RADAR';
-          bannerDesc.innerText = 'Приток стейблов и вымывание токенов из пула при высоком объёме покупок.';
-        } else {
-          banner.className = 'bg-gradient-to-r from-indigo-500/25 via-amber-500/15 to-[#121824] border border-indigo-500/40 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl';
-          bannerBox.className = 'w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shrink-0';
-          bannerTitle.innerText = `Активные сигналы: ${activeShorts} Шорт, ${activeLongs} Лонг!`;
-          bannerBadge.className = 'text-xs px-2 py-0.5 rounded bg-indigo-500/25 text-indigo-300 font-mono font-bold';
-          bannerBadge.innerText = 'MULTI-SIGNAL';
-          bannerDesc.innerText = 'Отслеживайте активные аномалии на спотовых пулах и фьючерсах Binance / Bybit.';
-        }
-      } else {
-        banner.classList.add('hidden');
-      }
     }
 
     function renderTable() {
