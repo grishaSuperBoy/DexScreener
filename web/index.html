@@ -430,7 +430,7 @@
 
     <!-- Pool Details Modal -->
     <div id="pool-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div class="card-surface rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 border border-slate-700/80">
+      <div class="card-surface rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 border border-slate-700/80">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div class="flex items-center gap-3">
             <div id="modal-icon" class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold text-base">
@@ -446,31 +446,33 @@
           </button>
         </div>
 
-        <div id="modal-content" class="space-y-3 text-xs">
+        <div id="modal-content" class="space-y-3.5 text-xs">
           <!-- Content dynamically injected -->
         </div>
 
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800 flex-wrap">
-          <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] text-slate-300 border border-slate-700 transition-base cursor-pointer">
+        <div class="flex items-center justify-between gap-2.5 pt-3 border-t border-slate-800 flex-nowrap overflow-x-auto">
+          <button onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] text-slate-300 border border-slate-700 transition-base cursor-pointer shrink-0 whitespace-nowrap">
             Закрыть
           </button>
-          <a id="modal-binance-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#f3ba2f] text-slate-950 hover:bg-yellow-400 transition-base cursor-pointer shadow-lg shadow-yellow-500/10">
-            <span>🟡 Binance Futures</span>
-          </a>
-          <a id="modal-bybit-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#f7a600] text-slate-950 hover:bg-orange-400 transition-base cursor-pointer shadow-lg shadow-orange-500/10">
-            <span>🟠 Bybit Futures</span>
-          </a>
-          <a id="modal-tv-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#2962FF] text-white hover:bg-blue-600 transition-base cursor-pointer shadow-lg shadow-blue-500/10">
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M4 19h4V5H4v14zm6 0h4V9h-4v10zm6 0h4v-6h-4v6z"/></svg>
-            <span>TradingView (.P)</span>
-          </a>
-          <a id="modal-cg-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-base cursor-pointer shadow-lg shadow-cyan-500/10">
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-            <span>CoinGlass TV</span>
-          </a>
-          <a id="modal-dex-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-base cursor-pointer shadow-lg shadow-amber-500/10">
-            <span>📈 DexScreener</span>
-          </a>
+          <div class="flex items-center gap-2 flex-nowrap shrink-0">
+            <a id="modal-binance-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#f3ba2f] text-slate-950 hover:bg-yellow-400 transition-base cursor-pointer shadow-lg shadow-yellow-500/10 shrink-0 whitespace-nowrap">
+              <span>🟡 Binance Futures</span>
+            </a>
+            <a id="modal-bybit-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#f7a600] text-slate-950 hover:bg-orange-400 transition-base cursor-pointer shadow-lg shadow-orange-500/10 shrink-0 whitespace-nowrap">
+              <span>🟠 Bybit Futures</span>
+            </a>
+            <a id="modal-tv-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#2962FF] text-white hover:bg-blue-600 transition-base cursor-pointer shadow-lg shadow-blue-500/10 shrink-0 whitespace-nowrap">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 shrink-0"><path d="M4 19h4V5H4v14zm6 0h4V9h-4v10zm6 0h4v-6h-4v6z"/></svg>
+              <span>TradingView (.P)</span>
+            </a>
+            <a id="modal-cg-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-base cursor-pointer shadow-lg shadow-cyan-500/10 shrink-0 whitespace-nowrap">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 shrink-0"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+              <span>CoinGlass TV</span>
+            </a>
+            <a id="modal-dex-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-base cursor-pointer shadow-lg shadow-amber-500/10 shrink-0 whitespace-nowrap">
+              <span>📈 DexScreener</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -1469,26 +1471,26 @@
         ${alertBannerHtml}
         ${squeezeBannerHtml}
 
-        <div class="grid grid-cols-2 gap-2.5">
-          <div class="p-3 rounded-xl inner-surface">
+        <div class="grid grid-cols-2 gap-3.5">
+          <div class="p-3.5 rounded-xl inner-surface">
             <div class="text-slate-400">Текущий TVL:</div>
             <div class="text-base font-bold font-mono text-white mt-0.5">${formatNumber(p.liquidity_usd)}</div>
             <div class="text-[10px] text-slate-500">Было: ${formatNumber(p.prev_liquidity_usd || p.liquidity_usd)}</div>
           </div>
-          <div class="p-3 rounded-xl inner-surface">
+          <div class="p-3.5 rounded-xl inner-surface">
             <div class="text-slate-400">Резерв ${p.quote_symbol || 'Quote'}:</div>
             <div class="text-base font-bold font-mono text-white mt-0.5">${(p.quote_res || 0).toLocaleString()}</div>
             <div class="text-[10px] ${deltaVal < 0 ? 'text-red-400 font-bold' : 'text-emerald-400'}">Дельта: ${deltaVal > 0 ? '+' : ''}${deltaVal.toFixed(2)}%</div>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2.5">
-          <div class="p-3 rounded-xl inner-surface">
+        <div class="grid grid-cols-2 gap-3.5">
+          <div class="p-3.5 rounded-xl inner-surface">
             <div class="text-slate-400">Цена на DEX:</div>
             <div class="text-sm font-bold font-mono text-white mt-0.5">${formatPrice(p.price_usd)}</div>
             <div class="text-[10px] ${priceChg >= 0 ? 'text-emerald-400' : 'text-red-400'} font-mono">Сдвиг: ${priceChg > 0 ? '+' : ''}${priceChg.toFixed(2)}%</div>
           </div>
-          <div class="p-3 rounded-xl inner-surface">
+          <div class="p-3.5 rounded-xl inner-surface">
             <div class="text-slate-400">Фандинг ставка:</div>
             <div class="mt-0.5 space-y-0.5">${frDetailsHtml}</div>
             <div class="text-[10px] ${isSqueeze ? 'text-amber-400 font-bold' : 'text-slate-400'} mt-1">
@@ -1497,7 +1499,7 @@
           </div>
         </div>
 
-        <div class="p-3 rounded-xl inner-surface">
+        <div class="p-3.5 rounded-xl inner-surface">
           <div class="text-slate-400 mb-1">Contract Pair Address:</div>
           <div class="font-mono text-[11px] select-all break-all text-amber-400">${p.pair_address || 'N/A'}</div>
         </div>
