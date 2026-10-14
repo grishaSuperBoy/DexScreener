@@ -14,9 +14,10 @@ def send_telegram_message(
     chat_id: str,
     text: str,
     parse_mode: str = "HTML",
+    disable_web_page_preview: bool = True,
     timeout: int = 10,
 ) -> bool:
-    """Отправляет сообщение в Telegram с обработкой ошибок."""
+    """Отправляет сообщение в Telegram с отключенным превью ссылок (без спама карточками)."""
     if not bot_token or not chat_id:
         return False
 
@@ -25,7 +26,7 @@ def send_telegram_message(
         "chat_id": chat_id,
         "text": text,
         "parse_mode": parse_mode,
-        "disable_web_page_preview": False,
+        "disable_web_page_preview": disable_web_page_preview,
     }
 
     try:
@@ -37,6 +38,42 @@ def send_telegram_message(
             return False
     except Exception as e:
         logger.error(f"Не удалось отправить уведомление в Telegram: {e}")
+        return False
+
+
+def send_telegram_photo(
+    bot_token: str,
+    chat_id: str,
+    photo_bytes: bytes,
+    caption: str = "",
+    parse_mode: str = "HTML",
+    timeout: int = 15,
+) -> bool:
+    """Отправляет изображение в Telegram (multipart/form-data)."""
+    if not bot_token or not chat_id or not photo_bytes:
+        return False
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+    data = {
+        "chat_id": chat_id,
+        "parse_mode": parse_mode,
+    }
+    if caption:
+        data["caption"] = caption
+
+    files = {
+        "photo": ("coinglass_1h.png", photo_bytes, "image/png"),
+    }
+
+    try:
+        resp = requests.post(url, data=data, files=files, timeout=timeout)
+        if resp.status_code == 200:
+            return True
+        else:
+            logger.warning(f"Telegram sendPhoto вернул ошибку {resp.status_code}: {resp.text}")
+            return False
+    except Exception as e:
+        logger.error(f"Не удалось отправить фото в Telegram: {e}")
         return False
 
 
@@ -92,6 +129,9 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
         links.append(f'<a href="https://www.binance.com/en/futures/{esc_symbol}USDT"><b>🟡 Binance Futures</b></a>')
     if "bybit" in exchanges:
         links.append(f'<a href="https://www.bybit.com/trade/usdt/{esc_symbol}USDT"><b>🟠 Bybit Futures</b></a>')
+
+    cg_exch = "Bybit" if ("bybit" in [e.lower() for e in exchanges] and "binance" not in [e.lower() for e in exchanges]) else "Binance"
+    links.append(f'<a href="https://www.coinglass.com/tv/{cg_exch}_{esc_symbol}USDT"><b>👁 CoinGlass (1H)</b></a>')
     links_str = " | ".join(links)
 
     # Биржевые теги
@@ -260,10 +300,31 @@ def notify_signal(bot_token: str, chat_id: str, sig: Dict[str, Any]):
     )
     console.print(Panel(console_text, title=title, border_style=border))
 
-    # 1. Отправляем в Telegram
+    # 1. Отправляем в Telegram (со скриншотом 1H CoinGlass и без превью ссылки DexScreener)
     if bot_token and chat_id:
         tg_html = format_signal_html(sig)
-        send_telegram_message(bot_token, chat_id, tg_html)
+
+        primary_exch = "bybit" if ("bybit" in [e.lower() for e in exchanges] and "binance" not in [e.lower() for e in exchanges]) else "binance"
+        screenshot_bytes = None
+        try:
+            from dex_screener.chart_capture import capture_coinglass_chart
+            screenshot_bytes = capture_coinglass_chart(sym, exchange=primary_exch, timeout_sec=15)
+        except Exception as e:
+            logger.warning(f"Ошибка вызова скриншотера CoinGlass: {e}")
+
+        if screenshot_bytes:
+            if len(tg_html) <= 1024:
+                send_telegram_photo(bot_token, chat_id, screenshot_bytes, caption=tg_html)
+            else:
+                send_telegram_photo(
+                    bot_token,
+                    chat_id,
+                    screenshot_bytes,
+                    caption=f"📊 <b>CoinGlass 1H Chart | ${sym.upper()}USDT ({primary_exch.capitalize()})</b>",
+                )
+                send_telegram_message(bot_token, chat_id, tg_html, disable_web_page_preview=True)
+        else:
+            send_telegram_message(bot_token, chat_id, tg_html, disable_web_page_preview=True)
 
     # 2. Сохраняем в MongoDB (для квант-анализа и бэктестинга)
     try:
