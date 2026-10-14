@@ -121,10 +121,8 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
     else:
         funding_display = "<code>N/A</code>"
 
-    # Ссылки на биржи и DEX
+    # Ссылки на биржи и аналитику
     links = []
-    if esc_url:
-        links.append(f'<a href="{esc_url}"><b>📈 DexScreener</b></a>')
     if "binance" in exchanges:
         links.append(f'<a href="https://www.binance.com/en/futures/{esc_symbol}USDT"><b>🟡 Binance Futures</b></a>')
     if "bybit" in exchanges:
@@ -296,7 +294,7 @@ def notify_signal(bot_token: str, chat_id: str, sig: Dict[str, Any]):
         f"Токены в пуле: {base_chg:+.1f}%\n"
         f"TVL пула: ${prev_tvl:,.0f} -> ${curr_tvl:,.0f}\n"
         f"Изменение цены: [bold]{price_chg:+.2f}%[/bold] | Фандинг: [bold cyan]{funding_str}[/bold cyan]\n"
-        f"DexScreener: {sig.get('dex_url')}"
+        f"CoinGlass (1H): https://www.coinglass.com/tv/Binance_{sym}USDT"
     )
     console.print(Panel(console_text, title=title, border_style=border))
 
@@ -307,10 +305,10 @@ def notify_signal(bot_token: str, chat_id: str, sig: Dict[str, Any]):
         primary_exch = "bybit" if ("bybit" in [e.lower() for e in exchanges] and "binance" not in [e.lower() for e in exchanges]) else "binance"
         screenshot_bytes = None
         try:
-            from dex_screener.chart_capture import capture_coinglass_chart
-            screenshot_bytes = capture_coinglass_chart(sym, exchange=primary_exch, timeout_sec=15)
+            from dex_screener.chart_capture import capture_price_chart
+            screenshot_bytes = capture_price_chart(sym, exchange=primary_exch, timeframe=tf, timeout_sec=15)
         except Exception as e:
-            logger.warning(f"Ошибка вызова скриншотера CoinGlass: {e}")
+            logger.warning(f"Ошибка вызова генератора графика цен: {e}")
 
         if screenshot_bytes:
             if len(tg_html) <= 1024:
@@ -320,7 +318,7 @@ def notify_signal(bot_token: str, chat_id: str, sig: Dict[str, Any]):
                     bot_token,
                     chat_id,
                     screenshot_bytes,
-                    caption=f"📊 <b>CoinGlass 1H Chart | ${sym.upper()}USDT ({primary_exch.capitalize()})</b>",
+                    caption=f"📊 <b>${sym.upper()} / USDT ({tf.upper()}) | График цены</b>",
                 )
                 send_telegram_message(bot_token, chat_id, tg_html, disable_web_page_preview=True)
         else:
