@@ -85,22 +85,35 @@ def cmd_build_map(args):
 
     if settings.enable_bybit:
         console.print(
-            f"[bold cyan][*] Поиск эксклюзивных крипто-токенов Bybit (которых нет на Binance, "
-            f"${settings.min_bybit_vol_usd:,.0f} - ${settings.max_bybit_vol_usd:,.0f})...[/bold cyan]"
+            f"[bold cyan][*] Получение фьючерсов Bybit "
+            f"(${settings.min_bybit_vol_usd:,.0f} - ${settings.max_bybit_vol_usd:,.0f})...[/bold cyan]"
         )
         bybit_targets = get_bybit_target_symbols(
             min_vol_usd=settings.min_bybit_vol_usd,
             max_vol_usd=settings.max_bybit_vol_usd,
-            exclude_symbols=binance_all_crypto,
+            exclude_symbols=None,
         )
-        console.print(f"[green][+] Bybit Exclusive: получено {len(bybit_targets)} уникальных токенов.[/green]")
+        exclusive_bybit_count = 0
+        shared_count = 0
         for sym, vol in bybit_targets:
-            merged_targets[sym] = {
-                "symbol": sym,
-                "binance_vol": 0.0,
-                "bybit_vol": vol,
-                "exchanges": ["bybit"],
-            }
+            if sym in merged_targets:
+                merged_targets[sym]["bybit_vol"] = vol
+                if "bybit" not in merged_targets[sym]["exchanges"]:
+                    merged_targets[sym]["exchanges"].append("bybit")
+                shared_count += 1
+            else:
+                merged_targets[sym] = {
+                    "symbol": sym,
+                    "binance_vol": 0.0,
+                    "bybit_vol": vol,
+                    "exchanges": ["bybit"],
+                }
+                exclusive_bybit_count += 1
+
+        console.print(
+            f"[green][+] Bybit: {len(bybit_targets)} токенов обработано "
+            f"({shared_count} общих с Binance, {exclusive_bybit_count} эксклюзивов Bybit).[/green]"
+        )
 
     targets = list(merged_targets.values())
     if not targets:

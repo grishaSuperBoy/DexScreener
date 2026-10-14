@@ -91,8 +91,8 @@ def search_best_pool(
         quote_val_usd = quote_res if is_stable_quote else (liq_usd * 0.5)
         quote_share = (quote_val_usd / liq_usd) if liq_usd > 0 else 0.0
 
-        # Если пул со стейблкоином, но стейблкоинов меньше 2% от TVL — это фейк/дутый пул (напр. миллиард токенов и 30 USDC)
-        if is_stable_quote and quote_share < 0.02:
+        # Если пул со стейблкоином, но стейблкоинов меньше 5% от TVL — это фейк/дутый пул (напр. миллиард токенов и 30 USDC)
+        if is_stable_quote and quote_share < 0.05:
             continue
 
         if (

@@ -116,14 +116,26 @@ class PoolMonitor:
                     if not tf_history:
                         continue
 
-                    # Для 3-часового окна: если у нас еще нет хотя бы 30 минут накопленных данных, 
-                    # пропускаем, чтобы не дублировать 1h импульс на холодном старте
                     oldest_snap = min(tf_history, key=lambda x: x.get("ts", 0))
                     span_sec = now - oldest_snap.get("ts", 0)
-                    if tf_name == "3h" and span_sec < 1800:
+                    # Для 3h окна требуем минимум 70 минут реальной истории, чтобы оно не дублировало 1h окно
+                    if tf_name == "3h" and span_sec < 4200:
                         continue
 
+                    # Множитель порогов для 3-часового окна (требуем более весомого изменения за 3 часа)
+                    tf_mult = getattr(self.settings, "tf_3h_threshold_multiplier", 1.45) if tf_name == "3h" else 1.0
+                    tf_hours = tf_seconds / 3600.0
+
                     is_cooldown_expired = (now - last_alert_map.get(tf_name, 0)) >= self.settings.alert_cooldown_sec
+
+                    # Общие проверки здоровья пула (для SHORT и LONG)
+                    is_stable = quote_sym in {"USDT", "USDC", "BUSD", "USD", "DAI", "FDUSD", "TUSD"}
+                    total_txns_h1 = buys_h1 + sells_h1
+                    is_active_pool = total_txns_h1 >= self.settings.min_pool_txns_h1
+
+                    quote_val_usd = quote_res if is_stable else (liq_usd * 0.5)
+                    quote_tvl_share = (quote_val_usd / liq_usd * 100.0) if liq_usd > 0 else 0.0
+                    is_balanced_pool = quote_tvl_share >= self.settings.min_quote_tvl_share_pct if is_stable else True
 
                     # =========================================================================
                     # 1. ПРОВЕРКА НА ШОРТ (Сравниваем с ПИКОМ ликвидности за окно)
@@ -133,63 +145,58 @@ class PoolMonitor:
                     else:
                         max_snap = max(tf_history, key=lambda x: x.get("quote_res", 0.0))
 
-                    max_quote = safe_float(max_snap.get("quote_res"), quote_res)
-                    max_base = safe_float(max_snap.get("base_res"), base_res)
-                    max_liq_usd = safe_float(max_snap.get("liq_usd"), liq_usd)
-                    max_price_usd = safe_float(max_snap.get("price_usd"), price_usd)
-
-                    short_quote_chg = ((quote_res - max_quote) / max_quote) * 100.0 if max_quote > 0 else 0.0
-                    short_base_chg = ((base_res - max_base) / max_base) * 100.0 if max_base > 0 else 0.0
-                    short_usd_chg = ((liq_usd - max_liq_usd) / max_liq_usd) * 100.0 if max_liq_usd > 0 else 0.0
-                    short_price_chg = ((price_usd - max_price_usd) / max_price_usd) * 100.0 if max_price_usd > 0 else 0.0
-
-                    ref_quote, ref_liq_usd, ref_price_usd = max_quote, max_liq_usd, max_price_usd
-
-                    if self.settings.track_mode == "usd":
-                        primary_drop = short_usd_chg
-                    elif self.settings.track_mode == "both":
-                        primary_drop = min(short_quote_chg, short_usd_chg)
+                    # Если мы проверяем 3h окно, но пик ликвидности был менее 1 часа назад,
+                    # значит это 1-часовой импульс (его уже обработало окно 1h) -> пропускаем дубль!
+                    if tf_name == "3h" and (now - max_snap.get("ts", now)) <= 3600:
+                        short_quote_chg = 0.0
+                        primary_drop = 0.0
+                        is_liq_drained = False
+                        is_price_lagging = False
                     else:
-                        primary_drop = short_quote_chg
+                        max_quote = safe_float(max_snap.get("quote_res"), quote_res)
+                        max_base = safe_float(max_snap.get("base_res"), base_res)
+                        max_liq_usd = safe_float(max_snap.get("liq_usd"), liq_usd)
+                        max_price_usd = safe_float(max_snap.get("price_usd"), price_usd)
 
-                    is_liq_drained = primary_drop <= self.settings.liq_drop_threshold_pct
-                    is_price_lagging = self.settings.max_price_drop_pct <= short_price_chg <= max_pump_pct
+                        short_quote_chg = ((quote_res - max_quote) / max_quote) * 100.0 if max_quote > 0 else 0.0
+                        short_base_chg = ((base_res - max_base) / max_base) * 100.0 if max_base > 0 else 0.0
+                        short_usd_chg = ((liq_usd - max_liq_usd) / max_liq_usd) * 100.0 if max_liq_usd > 0 else 0.0
+                        short_price_chg = ((price_usd - max_price_usd) / max_price_usd) * 100.0 if max_price_usd > 0 else 0.0
 
-                    # =========================================================================
-                    # ДИНАМИЧЕСКИЕ ПРОВЕРКИ КАЧЕСТВА ЛИКВИДНОСТИ (Dynamic Health Filters)
-                    # =========================================================================
-                    # 1. Синхронность (Когерентность): Падение TVL vs Падение Резерва Котировки
-                    coherence_ratio = (
-                        abs(short_usd_chg) / abs(short_quote_chg)
-                        if abs(short_quote_chg) > 0.001
-                        else 1.0
-                    )
-                    is_coherent = coherence_ratio >= self.settings.min_drain_coherence_ratio
+                        if tf_name == "1h":
+                            ref_quote, ref_liq_usd, ref_price_usd = max_quote, max_liq_usd, max_price_usd
 
-                    # 2. Рыночный импакт (Drain-to-Volume Ratio):
-                    is_stable = quote_sym in {"USDT", "USDC", "BUSD", "USD", "DAI", "FDUSD", "TUSD"}
-                    quote_drain_usd = abs(max_quote - quote_res) if is_stable else 0.0
-                    tvl_drain_usd = abs(max_liq_usd - liq_usd)
-                    real_drain_usd = max(tvl_drain_usd, quote_drain_usd)
+                        if self.settings.track_mode == "usd":
+                            primary_drop = short_usd_chg
+                        elif self.settings.track_mode == "both":
+                            primary_drop = min(short_quote_chg, short_usd_chg)
+                        else:
+                            primary_drop = short_quote_chg
 
-                    binance_vol = map_info.get("binance_vol", 0.0)
-                    bybit_vol = map_info.get("bybit_vol", 0.0)
-                    cex_hourly_vol = (binance_vol + bybit_vol) / 24.0
-                    total_hourly_vol = cex_hourly_vol + vol_h1
-
-                    impact_ratio = (real_drain_usd / total_hourly_vol) if total_hourly_vol > 0 else 0.0
-                    is_impactful = impact_ratio >= self.settings.min_drain_impact_pct
-
-                    # 3. Активность пула (Transaction Velocity):
-                    total_txns_h1 = buys_h1 + sells_h1
-                    is_active_pool = total_txns_h1 >= self.settings.min_pool_txns_h1
-
-                    # 4. Баланс пула (Quote Share in TVL):
-                    quote_val_usd = quote_res if is_stable else (liq_usd * 0.5)
-                    quote_tvl_share = (quote_val_usd / liq_usd * 100.0) if liq_usd > 0 else 0.0
-                    is_balanced_pool = quote_tvl_share >= self.settings.min_quote_tvl_share_pct if is_stable else True
+                        is_liq_drained = primary_drop <= (self.settings.liq_drop_threshold_pct * tf_mult)
+                        is_price_lagging = self.settings.max_price_drop_pct <= short_price_chg <= max_pump_pct
 
                     if is_liq_drained and is_price_lagging:
+                        coherence_ratio = (
+                            abs(short_usd_chg) / abs(short_quote_chg)
+                            if abs(short_quote_chg) > 0.001
+                            else 1.0
+                        )
+                        is_coherent = coherence_ratio >= self.settings.min_drain_coherence_ratio
+
+                        quote_drain_usd = abs(max_quote - quote_res) if is_stable else 0.0
+                        tvl_drain_usd = abs(max_liq_usd - liq_usd)
+                        real_drain_usd = max(tvl_drain_usd, quote_drain_usd)
+
+                        binance_vol = map_info.get("binance_vol", 0.0)
+                        bybit_vol = map_info.get("bybit_vol", 0.0)
+                        cex_hourly_vol = (binance_vol + bybit_vol) / 24.0
+                        # Масштабируем оборот под длительность окна (1ч или 3ч)
+                        total_window_vol = (cex_hourly_vol + vol_h1) * tf_hours
+
+                        impact_ratio = (real_drain_usd / total_window_vol) if total_window_vol > 0 else 0.0
+                        is_impactful = impact_ratio >= self.settings.min_drain_impact_pct
+
                         if not (is_coherent and is_impactful and is_active_pool and is_balanced_pool):
                             logger.info(
                                 f"Фильтр шума [{tf_name}] {sym}: Coh={coherence_ratio:.3f} (нужно >={self.settings.min_drain_coherence_ratio}), "
@@ -239,14 +246,20 @@ class PoolMonitor:
                                 triggered_signals.append(sig_obj)
                                 notify_signal(self.settings.tg_bot_token, self.settings.tg_chat_id, sig_obj)
                                 last_alert_map[tf_name] = now
+                                last_alert_map["3h" if tf_name == "1h" else "1h"] = now
                             else:
                                 logger.info(f"SHORT [{tf_name}] сигнал по {sym} на кулдауне.")
 
                     # =========================================================================
                     # 2. ПРОВЕРКА НА ЛОНГ / НАКОПЛЕНИЕ (Сравниваем с МИНИМУМОМ за окно)
                     # =========================================================================
-                    elif self.settings.enable_long_signals:
+                    elif self.settings.enable_long_signals and is_active_pool and is_balanced_pool:
                         min_snap = min(tf_history, key=lambda x: x.get("quote_res", quote_res))
+
+                        # Защита от дубля 1h внутри 3h окна
+                        if tf_name == "3h" and (now - min_snap.get("ts", now)) <= 3600:
+                            continue
+
                         min_quote = safe_float(min_snap.get("quote_res"), quote_res)
                         min_base = safe_float(min_snap.get("base_res"), base_res)
                         min_liq_usd = safe_float(min_snap.get("liq_usd"), liq_usd)
@@ -257,18 +270,18 @@ class PoolMonitor:
                         long_usd_chg = ((liq_usd - min_liq_usd) / min_liq_usd) * 100.0 if min_liq_usd > 0 else 0.0
                         long_price_chg = ((price_usd - min_price_usd) / min_price_usd) * 100.0 if min_price_usd > 0 else 0.0
 
-                        # Паттерн 1: Тихая заливка LP
+                        # Паттерн 1: Тихая заливка LP (с учетом множителя окна tf_mult)
                         is_silent_lp_add = (
-                            long_quote_chg >= self.settings.lp_inject_quote_pct
-                            and long_base_chg >= self.settings.lp_inject_base_pct
+                            long_quote_chg >= (self.settings.lp_inject_quote_pct * tf_mult)
+                            and long_base_chg >= (self.settings.lp_inject_base_pct * tf_mult)
                             and -2.5 <= long_price_chg <= 3.5
                         )
 
-                        # Паттерн 2: Скрытый пылесос
+                        # Паттерн 2: Скрытый пылесос (с учетом множителя окна tf_mult)
                         tx_ratio = (buys_h1 / sells_h1) if sells_h1 > 0 else float(buys_h1)
                         is_stealth_buy = (
-                            long_quote_chg >= self.settings.stealth_buy_quote_pct
-                            and long_base_chg <= self.settings.stealth_buy_base_drop_pct
+                            long_quote_chg >= (self.settings.stealth_buy_quote_pct * tf_mult)
+                            and long_base_chg <= (self.settings.stealth_buy_base_drop_pct * tf_mult)
                             and 0.2 <= long_price_chg <= self.settings.stealth_buy_max_price_pct
                             and tx_ratio >= self.settings.stealth_buy_min_tx_ratio
                             and buys_h1 >= self.settings.stealth_buy_min_buys_h1
@@ -309,6 +322,8 @@ class PoolMonitor:
                                 "binance_funding": binance_fr,
                                 "bybit_funding": bybit_fr,
                                 "exchanges": exchanges,
+                                "total_txns_h1": total_txns_h1,
+                                "quote_tvl_share_pct": round(quote_tvl_share, 2),
                                 "is_squeeze_fuel": is_squeeze,
                                 "dex_url": url,
                             }
@@ -317,6 +332,7 @@ class PoolMonitor:
                                 triggered_signals.append(sig_obj)
                                 notify_signal(self.settings.tg_bot_token, self.settings.tg_chat_id, sig_obj)
                                 last_alert_map[tf_name] = now
+                                last_alert_map["3h" if tf_name == "1h" else "1h"] = now
                             else:
                                 logger.info(f"LONG [{tf_name}] сигнал по {sym} на кулдауне.")
 

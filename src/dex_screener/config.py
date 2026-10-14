@@ -31,10 +31,11 @@ class Settings(BaseSettings):
     track_mode: Literal["quote", "usd", "both"] = "quote"
 
     # Динамические фильтры качества ликвидности (Защита от фейковых и мертвых пулов)
-    min_drain_coherence_ratio: float = 0.15  # Синхронность: TVL должен упасть хотя бы на 15% от падения котировки
+    min_drain_coherence_ratio: float = 0.25  # Синхронность: TVL должен упасть хотя бы на 25% от падения котировки
     min_drain_impact_pct: float = 0.015  # Рыночный импакт: отток >= 1.5% от среднечасового оборота (CEX+DEX)
     min_pool_txns_h1: int = 5  # Активность: минимум 5 сделок на пуле за последний час
-    min_quote_tvl_share_pct: float = 2.0  # Баланс: резерв котировки должен составлять >= 2% от TVL пула
+    min_quote_tvl_share_pct: float = 5.0  # Баланс: резерв котировки должен составлять >= 5% от TVL пула
+    tf_3h_threshold_multiplier: float = 1.45  # Множитель порогов для 3-часового окна (1.45x для отсечения шума)
 
     # Пороги для ЛОНГА / НАКОПЛЕНИЯ (Памп-радар)
     enable_long_signals: bool = True
@@ -42,8 +43,8 @@ class Settings(BaseSettings):
     lp_inject_base_pct: float = 8.0  # Тихая заливка LP: токены тоже выросли на +8%+
     stealth_buy_quote_pct: float = 8.0  # Скрытый выкуп: стейблы +8%+
     stealth_buy_base_drop_pct: float = -6.0  # Скрытый выкуп: токены выгребли из пула на -6%+
-    stealth_buy_max_price_pct: float = 5.5  # Цена еще на старте (не выше +5.5%)
-    stealth_buy_min_tx_ratio: float = 1.4  # Перевес покупок над продажами (buys / sells >= 1.4)
+    stealth_buy_max_price_pct: float = 3.5  # Цена еще на старте (не выше +3.5%, чтобы не покупать хаи)
+    stealth_buy_min_tx_ratio: float = 1.7  # Перевес покупок над продажами (buys / sells >= 1.7)
     stealth_buy_min_buys_h1: int = 25  # Минимум 25 покупок за час (живой пул)
     squeeze_funding_threshold_pct: float = -0.02  # Отрицательный фандинг (< -0.02%) = топливо для шорт-сквиза
 
