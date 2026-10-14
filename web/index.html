@@ -591,7 +591,10 @@
 
     function setFilter(filter) {
       currentFilter = filter;
-      if (filter === 'squeeze' && sortColumn === 'signal_time') {
+      if (filter === 'shorts' || filter === 'longs') {
+        sortColumn = 'signal_time';
+        sortDirection = 'desc';
+      } else if ((filter === 'squeeze' || filter === 'all') && sortColumn === 'signal_time') {
         sortColumn = 'liquidity_usd';
         sortDirection = 'desc';
       }
