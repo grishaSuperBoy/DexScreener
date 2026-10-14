@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="neonGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00FFA3"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <radialGradient id="glowPulse" cx="50%" cy="55%" r="50%">
+      <stop offset="0%" stop-color="#00FFA3" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#10B981" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="neonBlur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark Obsidian Squircle Background -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#0B0E14" stroke="#1E293B" stroke-width="2"/>
+
+  <!-- Radial Neon Glow -->
+  <circle cx="32" cy="35" r="24" fill="url(#glowPulse)"/>
+
+  <!-- Neon Green Liquidity Radar Pulse Waves -->
+  <path d="M18 42 A16 16 0 0 1 46 42" fill="none" stroke="#00FFA3" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+  <path d="M22 42 A11 11 0 0 1 42 42" fill="none" stroke="#00FFA3" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Glowing Neon Teardrop Symbol -->
+  <path d="M32 14 C32 14 45 28 45 38 A13 13 0 1 1 19 38 C19 28 32 14 32 14 Z" 
+        fill="url(#neonGreen)" 
+        filter="url(#neonBlur)"/>
+
+  <!-- Highlight Sparkle inside droplet -->
+  <ellipse cx="28" cy="34" rx="3.5" ry="5.5" transform="rotate(-25 28 34)" fill="#FFFFFF" opacity="0.65"/>
+  <circle cx="32" cy="41" r="2.5" fill="#FFFFFF" opacity="0.8"/>
+</svg>

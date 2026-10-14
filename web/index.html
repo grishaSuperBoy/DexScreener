@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DexScreener, Binance &amp; Bybit Futures Radar</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/favicon.png">
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      background-color: #0b0e14;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(1.15); }
+    }
+    .animate-pulse-fast {
+      animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .transition-base {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0e14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    .card-surface {
+      background: #121824;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .card-surface:hover {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+    .inner-surface {
+      background: #0e1420;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+  </style>
+</head>
+<body class="bg-[#0b0e14] text-[#f1f5f9] antialiased min-h-screen p-3 sm:p-5">
+  <div class="max-w-7xl mx-auto space-y-4">
+
+    <!-- Top Navigation / App Bar (Material 3 Dark) -->
+    <header class="card-surface rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/5">
+          <!-- Material Symbol: radar / waves -->
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-8c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5-5.5-2.47-5.5-5.5zm7.5 0c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2 2-.9 2-2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">DexScreener, Binance &amp; Bybit Radar</h1>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-fast"></span>
+              LIVE ON-CHAIN
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-400">
+            Двухфакторный монитор: ШОРТ (вывод ликвидности) + ЛОНГ (тихий выкуп / LP) + Фандинг (Binance &amp; Bybit)
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 self-stretch md:self-auto justify-end flex-wrap">
+        <!-- History Drawer Button -->
+        <button id="btn-history" onclick="toggleHistoryDrawer()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 transition-base cursor-pointer shadow-sm">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+            <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+          </svg>
+          <span>История сигналов</span>
+          <span id="badge-history-count" class="ml-1 px-1.5 py-0.2 rounded-full bg-indigo-500 text-white text-[10px] font-bold">0</span>
+        </button>
+
+        <button id="btn-simulate" onclick="simulateAnomaly()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 transition-base cursor-pointer">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+            <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C14.94 14.16 13 17.56 11 21z"/>
+          </svg>
+          Тест алерта
+        </button>
+
+        <button id="btn-refresh" onclick="refreshData()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] border border-slate-700/60 text-slate-200 transition-base cursor-pointer">
+          <svg id="refresh-icon" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+            <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+          </svg>
+          Синхронизация
+        </button>
+      </div>
+    </header>
+
+    <!-- KPI Metric Cards Grid (4 Cards) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <!-- Card 1: Pools & TVL -->
+      <div class="card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-400">Пулов в мониторинге</span>
+          <div class="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="metric-total-pools" class="text-2xl font-extrabold text-white">0</span>
+          <span id="metric-total-tvl" class="text-xs text-blue-400 font-semibold font-mono">$0 TVL</span>
+        </div>
+        <div class="mt-1 text-xs text-slate-500">Binance &amp; Bybit Futures + DEX Multichain</div>
+      </div>
+
+      <!-- Card 2: Short Alerts -->
+      <div class="card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden border-red-500/30 bg-gradient-to-br from-red-500/10 via-[#121824] to-[#121824]">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-red-400">Сигналы ШОРТ</span>
+          <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <path d="M16 18l2.29-2.29-4.88-4.88-4 4L2 7.41 3.41 6l6 6 4-4 6.3 6.29L22 12v6z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="metric-active-shorts" class="text-2xl font-extrabold text-red-400">0</span>
+          <span id="metric-short-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">Спокойно</span>
+        </div>
+        <div class="mt-1 text-xs text-slate-400">Слив ликвидности &le; -12%</div>
+      </div>
+
+      <!-- Card 3: Long Alerts (Accumulation / LP) -->
+      <div class="card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-[#121824] to-[#121824]">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-emerald-400">Сигналы ЛОНГ / НАКОПЛЕНИЕ</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="metric-active-longs" class="text-2xl font-extrabold text-emerald-400">0</span>
+          <span id="metric-long-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">Спокойно</span>
+        </div>
+        <div class="mt-1 text-xs text-slate-400">Тихий выкуп токенов / Заливка LP</div>
+      </div>
+
+      <!-- Card 4: Short Squeeze Fuel -->
+      <div class="card-surface rounded-2xl p-4 shadow-lg relative overflow-hidden border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-[#121824] to-[#121824]">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-amber-400">Шорт-сквиз топливо</span>
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <path d="M19.48 12.35c-1.57-.56-2.91-1.57-3.9-2.92C14.7 8.24 14.15 6.68 14 5c-.04-.33-.2-.64-.47-.84-.28-.2-.62-.27-.93-.2-3.17.78-5.63 2.94-6.66 5.86C5.06 12.39 5 13.18 5 14c0 3.87 3.13 7 7 7 3.48 0 6.37-2.54 6.9-5.9.06-.41-.12-.82-.47-1.05-.33-.23-.76-.26-1.12-.13-.37.13-.76.22-1.16.27.05-.28.12-.56.23-.84z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="metric-squeeze-count" class="text-2xl font-extrabold text-amber-400 font-mono">0</span>
+          <span class="text-xs text-amber-400 font-semibold font-mono">FR &le; -0.02%</span>
+        </div>
+        <div class="mt-1 text-xs text-slate-400">Отрицательный фандинг Binance / Bybit</div>
+      </div>
+    </div>
+
+    <!-- Active Signals Alert Banner (Shown when short/long signals active) -->
+    <div id="signals-banner" class="hidden rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl border">
+      <div class="flex items-center gap-3">
+        <div id="banner-icon-box" class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shrink-0">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 animate-pulse-fast">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 id="signals-banner-title" class="font-bold text-base">Внимание: обнаружена ончейн активность!</h3>
+            <span id="signals-banner-badge" class="text-xs px-2 py-0.5 rounded font-mono font-bold">RADAR ALERT</span>
+          </div>
+          <p id="signals-banner-desc" class="text-xs text-slate-300 mt-0.5">
+            Зафиксированы отклонения в резервах DEX-пулов относительно фьючерсов Binance / Bybit.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="setFilter('alerts')" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-base cursor-pointer shadow-md">
+          Показать алерты
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters, Search & Settings Toolbar -->
+    <div class="card-surface rounded-2xl p-4 shadow-lg space-y-3">
+      <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        
+        <!-- Search Input -->
+        <div class="relative flex-1">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+          </div>
+          <input
+            id="search-input"
+            type="text"
+            oninput="renderTable()"
+            placeholder="Поиск по монете (PEPE, PUMPFUN, SOL, BONK, AERO)..."
+            class="w-full pl-10 pr-4 py-2.5 bg-[#0e1420] border border-slate-700/60 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-base"
+          />
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 shrink-0">
+          <button onclick="setFilter('all')" id="chip-all" class="filter-chip px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 transition-base cursor-pointer shadow-md shadow-amber-500/10">
+            Все пулы
+          </button>
+          <button onclick="setFilter('binance')" id="chip-binance" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] border border-yellow-500/30 text-yellow-300 transition-base cursor-pointer flex items-center gap-1">
+            <span>🟡 Binance</span>
+            <span id="chip-binance-count" class="px-1.5 py-0.2 rounded-full bg-yellow-500/20 text-[10px] font-bold">0</span>
+          </button>
+          <button onclick="setFilter('bybit')" id="chip-bybit" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] border border-orange-500/30 text-orange-300 transition-base cursor-pointer flex items-center gap-1">
+            <span>🟠 Bybit</span>
+            <span id="chip-bybit-count" class="px-1.5 py-0.2 rounded-full bg-orange-500/20 text-[10px] font-bold">0</span>
+          </button>
+          <button onclick="setFilter('solana')" id="chip-solana" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] border border-slate-700/50 text-slate-300 transition-base cursor-pointer">
+            Solana
+          </button>
+          <button onclick="setFilter('ethereum')" id="chip-ethereum" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] border border-slate-700/50 text-slate-300 transition-base cursor-pointer">
+            Ethereum
+          </button>
+          <button onclick="setFilter('bsc')" id="chip-bsc" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] border border-slate-700/50 text-slate-300 transition-base cursor-pointer">
+            BSC
+          </button>
+          <button onclick="setFilter('base')" id="chip-base" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] border border-slate-700/50 text-slate-300 transition-base cursor-pointer">
+            Base
+          </button>
+          <button onclick="setFilter('shorts')" id="chip-shorts" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-red-500/20 border border-red-500/30 text-red-400 transition-base cursor-pointer flex items-center gap-1.5">
+            <span>🚨 Шорт</span>
+            <span id="chip-shorts-count" class="px-1.5 py-0.2 rounded-full bg-red-500/30 text-[10px] font-bold">0</span>
+          </button>
+          <button onclick="setFilter('longs')" id="chip-longs" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 transition-base cursor-pointer flex items-center gap-1.5">
+            <span>🟢 Лонг</span>
+            <span id="chip-longs-count" class="px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-[10px] font-bold">0</span>
+          </button>
+          <button onclick="setFilter('squeeze')" id="chip-squeeze" class="filter-chip px-3 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 transition-base cursor-pointer flex items-center gap-1.5">
+            <span>🔥 Сквиз</span>
+            <span id="chip-squeeze-count" class="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-[10px] font-bold">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Threshold Slider Simulator -->
+      <div class="pt-3 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 text-slate-400">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-amber-400">
+            <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
+          </svg>
+          <span>Порог сброса ликвидности (Шорт):</span>
+          <span id="threshold-val" class="font-bold text-amber-400 font-mono text-sm">-12.0%</span>
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-72">
+          <span class="text-[11px] text-slate-500 font-mono">-5%</span>
+          <input
+            id="threshold-slider"
+            type="range"
+            min="-30"
+            max="-5"
+            step="1"
+            value="-12"
+            oninput="updateThreshold(this.value)"
+            class="w-full accent-amber-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg appearance-none"
+          />
+          <span class="text-[11px] text-slate-500 font-mono">-30%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Data Table Container -->
+    <div class="card-surface rounded-2xl shadow-xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs sm:text-sm border-collapse">
+          <thead>
+            <tr class="border-b border-slate-800 bg-[#0e1420]/80 text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+              <th onclick="toggleSort('symbol')" class="py-3.5 px-4 cursor-pointer hover:text-white transition-base select-none">
+                Монета / Биржи <span id="sort-symbol"></span>
+              </th>
+              <th onclick="toggleSort('chain')" class="py-3.5 px-3 cursor-pointer hover:text-white transition-base select-none">
+                Сеть &amp; DEX <span id="sort-chain"></span>
+              </th>
+              <th class="py-3.5 px-3">Квота</th>
+              <th onclick="toggleSort('liquidity_usd')" class="py-3.5 px-3 text-right cursor-pointer hover:text-white transition-base select-none">
+                TVL ($) <span id="sort-liquidity_usd">▼</span>
+              </th>
+              <th onclick="toggleSort('quote_delta_pct')" class="py-3.5 px-3 text-right cursor-pointer hover:text-white transition-base select-none">
+                Δ Квоты <span id="sort-quote_delta_pct"></span>
+              </th>
+              <th onclick="toggleSort('funding_rate')" class="py-3.5 px-3 text-right cursor-pointer hover:text-white transition-base select-none">
+                Фандинг <span id="sort-funding_rate"></span>
+              </th>
+              <th onclick="toggleSort('price_usd')" class="py-3.5 px-3 text-right cursor-pointer hover:text-white transition-base select-none">
+                Цена DEX <span id="sort-price_usd"></span>
+              </th>
+              <th class="py-3.5 px-3 text-center">Статус</th>
+              <th class="py-3.5 px-4 text-right">Действие</th>
+            </tr>
+          </thead>
+          <tbody id="pool-table-body" class="divide-y divide-slate-800/80">
+            <!-- Dynamic rows rendered here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty state container -->
+      <div id="empty-state" class="hidden p-8 text-center space-y-3">
+        <div class="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+        </div>
+        <div id="empty-text" class="text-sm font-medium text-slate-300">Ничего не найдено</div>
+        <p id="empty-sub" class="text-xs text-slate-500 max-w-md mx-auto">
+          По текущим фильтрам нет пулов. Попробуйте сбросить фильтр или изменить строку поиска.
+        </p>
+        <button onclick="setFilter('all'); document.getElementById('search-input').value=''; renderTable();" class="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-base cursor-pointer">
+          Сбросить фильтры и показать все монеты
+        </button>
+      </div>
+
+      <!-- Table Footer / Stats -->
+      <div class="p-3.5 bg-[#0e1420]/60 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+        <div id="footer-count" class="font-mono">Загрузка пулов...</div>
+        <div class="flex items-center gap-4 flex-wrap">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Норма
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-red-400 animate-pulse-fast"></span> ШОРТ (Слив пула)
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-fast"></span> ЛОНГ (Накопление)
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="text-amber-400 font-bold">🔥</span> Шорт-сквиз
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signals History Drawer (Slide-Over Panel backed by IndexedDB) -->
+    <div id="history-drawer" class="hidden fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm transition-base">
+      <div class="w-full max-w-2xl bg-[#0e1420] border-l border-slate-700/80 h-full flex flex-col shadow-2xl">
+        <!-- Drawer Header -->
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-[#121824]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                История сигналов (3 дня)
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  IndexedDB
+                </span>
+              </h2>
+              <p class="text-xs text-slate-400">Хранение сигналов за последние 72 часа</p>
+            </div>
+          </div>
+          <button onclick="toggleHistoryDrawer()" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white cursor-pointer transition-base">
+            ✕
+          </button>
+        </div>
+
+        <!-- Drawer Filter Chips -->
+        <div class="p-3 bg-[#121824]/60 border-b border-slate-800 flex items-center justify-between gap-2 overflow-x-auto text-xs">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-chip px-3 py-1.5 rounded-lg font-semibold bg-indigo-500 text-white cursor-pointer">
+              Все (<span id="hist-count-all">0</span>)
+            </button>
+            <button onclick="filterHistory('SHORT')" id="hist-filter-short" class="hist-chip px-3 py-1.5 rounded-lg font-semibold bg-[#182234] text-red-400 hover:bg-red-500/20 border border-red-500/30 cursor-pointer">
+              Шорт (<span id="hist-count-short">0</span>)
+            </button>
+            <button onclick="filterHistory('LONG')" id="hist-filter-long" class="hist-chip px-3 py-1.5 rounded-lg font-semibold bg-[#182234] text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 cursor-pointer">
+              Лонг (<span id="hist-count-long">0</span>)
+            </button>
+            <button onclick="filterHistory('1h')" id="hist-filter-1h" class="hist-chip px-2.5 py-1.5 rounded-lg font-semibold bg-[#182234] text-blue-400 hover:bg-blue-500/20 border border-blue-500/30 cursor-pointer">
+              ⚡ 1ч
+            </button>
+            <button onclick="filterHistory('3h')" id="hist-filter-3h" class="hist-chip px-2.5 py-1.5 rounded-lg font-semibold bg-[#182234] text-purple-400 hover:bg-purple-500/20 border border-purple-500/30 cursor-pointer">
+              ⏳ 3ч
+            </button>
+          </div>
+          <button onclick="clearHistoryIndexedDB()" class="text-[11px] text-slate-400 hover:text-red-400 cursor-pointer transition-base shrink-0">
+            Очистить кэш
+          </button>
+        </div>
+
+        <!-- Drawer Signals List -->
+        <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+          <!-- Dynamically populated from IndexedDB -->
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-3.5 border-t border-slate-800 bg-[#121824] flex items-center justify-between text-xs text-slate-400">
+          <span>Синхронизировано с сервером</span>
+          <button onclick="toggleHistoryDrawer()" class="px-4 py-1.5 rounded-xl font-semibold bg-[#182234] hover:bg-[#223048] text-slate-200 border border-slate-700 transition-base cursor-pointer">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pool Details Modal -->
+    <div id="pool-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div class="card-surface rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 border border-slate-700/80">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-3">
+            <div id="modal-icon" class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold text-base">
+              T
+            </div>
+            <div>
+              <h3 id="modal-title" class="font-bold text-lg text-white">TOKEN / USDT</h3>
+              <p id="modal-sub" class="text-xs text-slate-400 font-mono">Solana / Raydium</p>
+            </div>
+          </div>
+          <button onclick="closeModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white cursor-pointer transition-base">
+            ✕
+          </button>
+        </div>
+
+        <div id="modal-content" class="space-y-3 text-xs">
+          <!-- Content dynamically injected -->
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800 flex-wrap">
+          <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-[#202d44] text-slate-300 border border-slate-700 transition-base cursor-pointer">
+            Закрыть
+          </button>
+          <a id="modal-binance-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#f3ba2f] text-slate-950 hover:bg-yellow-400 transition-base cursor-pointer shadow-lg shadow-yellow-500/10">
+            <span>🟡 Binance Futures</span>
+          </a>
+          <a id="modal-bybit-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#f7a600] text-slate-950 hover:bg-orange-400 transition-base cursor-pointer shadow-lg shadow-orange-500/10">
+            <span>🟠 Bybit Futures</span>
+          </a>
+          <a id="modal-dex-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-base cursor-pointer shadow-lg shadow-amber-500/10">
+            <span>📈 DexScreener</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. INDEXEDDB IMPLEMENTATION (Хранилище сигналов на 3 суток в браузере)
+    // =========================================================================
+    const IDB_NAME = 'DexRadarDB';
+    const IDB_VERSION = 1;
+    const IDB_STORE = 'signals_history';
+
+    function openIndexedDB() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          console.warn('IndexedDB не поддерживается данным браузером.');
+          resolve(null);
+          return;
+        }
+        const request = indexedDB.open(IDB_NAME, IDB_VERSION);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            const store = db.createObjectStore(IDB_STORE, { keyPath: 'id' });
+            store.createIndex('timestamp', 'timestamp', { unique: false });
+            store.createIndex('direction', 'direction', { unique: false });
+            store.createIndex('symbol', 'symbol', { unique: false });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => {
+          console.warn('Ошибка открытия IndexedDB:', request.error);
+          resolve(null);
+        };
+      });
+    }
+
+    async function saveSignalsToIndexedDB(signalsList) {
+      if (!signalsList || !signalsList.length) return;
+      const db = await openIndexedDB();
+      if (!db) return;
+
+      const cutoff = (Date.now() / 1000) - (3 * 86400); // 3 суток
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(IDB_STORE, 'readwrite');
+          const store = tx.objectStore(IDB_STORE);
+
+          signalsList.forEach(sig => {
+            if (sig && sig.id && (sig.timestamp >= cutoff)) {
+              store.put(sig);
+            }
+          });
+
+          // Чистим записи старше 3 суток
+          const index = store.index('timestamp');
+          const cursorReq = index.openCursor();
+          cursorReq.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+              if (cursor.value.timestamp < cutoff) {
+                cursor.delete();
+              }
+              cursor.continue();
+            }
+          };
+
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        } catch (err) {
+          console.warn('Ошибка сохранения в IndexedDB:', err);
+          resolve(false);
+        }
+      });
+    }
+
+    async function loadSignalsFromIndexedDB() {
+      const db = await openIndexedDB();
+      if (!db) return [];
+
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(IDB_STORE, 'readonly');
+          const store = tx.objectStore(IDB_STORE);
+          const request = store.getAll();
+
+          request.onsuccess = () => {
+            const cutoff = (Date.now() / 1000) - (3 * 86400);
+            const valid = (request.result || [])
+              .filter(s => s && s.timestamp >= cutoff)
+              .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            resolve(valid);
+          };
+          request.onerror = () => resolve([]);
+        } catch (err) {
+          console.warn('Ошибка чтения из IndexedDB:', err);
+          resolve([]);
+        }
+      });
+    }
+
+    async function clearHistoryIndexedDB() {
+      if (!confirm('Очистить локальный кэш сигналов в IndexedDB?')) return;
+      const db = await openIndexedDB();
+      if (!db) return;
+      try {
+        const tx = db.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).clear();
+        tx.oncomplete = () => {
+          cachedSignals = [];
+          updateSignalsUI();
+          renderHistoryDrawer();
+        };
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    // =========================================================================
+    // 2. STATE & UI LOGIC
+    // =========================================================================
+    let poolsData = [];
+    let cachedSignals = [];
+    let currentFilter = 'all';
+    let historyFilter = 'all';
+    let currentThreshold = -12.0;
+    let sortColumn = 'liquidity_usd';
+    let sortDirection = 'desc';
+
+    function formatNumber(num) {
+      if (!num && num !== 0) return '$0';
+      if (num >= 1e9) return '$' + (num / 1e9).toFixed(2) + 'B';
+      if (num >= 1e6) return '$' + (num / 1e6).toFixed(2) + 'M';
+      if (num >= 1e3) return '$' + (num / 1e3).toFixed(1) + 'k';
+      return '$' + Number(num).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function formatPrice(p) {
+      if (!p && p !== 0) return '$0.00';
+      if (p < 0.00001) return '$' + p.toExponential(3);
+      if (p < 0.1) return '$' + p.toFixed(5);
+      if (p < 1) return '$' + p.toFixed(4);
+      return '$' + p.toFixed(2);
+    }
+
+    function isShortAlert(p) {
+      const drop = (typeof p.quote_delta_pct === 'number') ? p.quote_delta_pct : 0;
+      const priceChg = (typeof p.price_delta_pct === 'number') ? p.price_delta_pct : 0;
+      return (drop <= currentThreshold && priceChg >= -2.5) || p.is_short || (p.signal_direction === 'SHORT');
+    }
+
+    function isLongAlert(p) {
+      return Boolean(p.is_long || p.signal_direction === 'LONG');
+    }
+
+    function isSqueezeAlert(p) {
+      return Boolean(p.is_squeeze_fuel || (typeof p.funding_rate === 'number' && p.funding_rate <= -0.02));
+    }
+
+    function toggleSort(col) {
+      if (sortColumn === col) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = col;
+        sortDirection = 'desc';
+      }
+      renderTable();
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach(btn => {
+        btn.classList.remove(
+          'bg-amber-500', 'text-slate-950', 'shadow-md', 'shadow-amber-500/10',
+          'bg-red-500', 'bg-emerald-500', 'bg-yellow-500', 'bg-orange-500', 'text-white'
+        );
+        btn.classList.add('bg-[#182234]', 'text-slate-300');
+      });
+
+      const activeBtn = document.getElementById(`chip-${filter}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-[#182234]', 'text-slate-300');
+        if (filter === 'shorts') {
+          activeBtn.classList.add('bg-red-500', 'text-white');
+        } else if (filter === 'longs') {
+          activeBtn.classList.add('bg-emerald-500', 'text-white');
+        } else if (filter === 'squeeze') {
+          activeBtn.classList.add('bg-amber-500', 'text-slate-950');
+        } else if (filter === 'binance') {
+          activeBtn.classList.add('bg-yellow-500', 'text-slate-950');
+        } else if (filter === 'bybit') {
+          activeBtn.classList.add('bg-orange-500', 'text-slate-950');
+        } else {
+          activeBtn.classList.add('bg-amber-500', 'text-slate-950', 'shadow-md', 'shadow-amber-500/10');
+        }
+      }
+      renderTable();
+    }
+
+    function updateThreshold(val) {
+      currentThreshold = parseFloat(val);
+      document.getElementById('threshold-val').innerText = `${currentThreshold.toFixed(1)}%`;
+      renderTable();
+    }
+
+    function refreshData() {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+      fetchLiveState().finally(() => {
+        setTimeout(() => {
+          if (icon) icon.classList.remove('animate-spin');
+        }, 600);
+      });
+    }
+
+    function simulateAnomaly() {
+      if (poolsData.length === 0) return;
+      const target = poolsData.find(p => p.symbol === 'PEPE') || poolsData[0];
+      if (target) {
+        target.is_short = true;
+        target.quote_delta_pct = -18.4;
+        target.price_delta_pct = 0.52;
+        target.prev_liquidity_usd = target.liquidity_usd;
+        target.liquidity_usd = target.liquidity_usd * 0.816;
+        renderTable();
+        showModal(target);
+      }
+    }
+
+    function toggleHistoryDrawer() {
+      const drawer = document.getElementById('history-drawer');
+      const isHidden = drawer.classList.contains('hidden');
+      if (isHidden) {
+        drawer.classList.remove('hidden');
+        renderHistoryDrawer();
+      } else {
+        drawer.classList.add('hidden');
+      }
+    }
+
+    function filterHistory(type) {
+      historyFilter = type;
+      document.querySelectorAll('.hist-chip').forEach(c => {
+        c.classList.remove('bg-indigo-500', 'text-white');
+        c.classList.add('bg-[#182234]');
+      });
+      const active = document.getElementById(`hist-filter-${type.toLowerCase()}`);
+      if (active) {
+        active.classList.add('bg-indigo-500', 'text-white');
+        active.classList.remove('bg-[#182234]');
+      }
+      renderHistoryDrawer();
+    }
+
+    function renderHistoryDrawer() {
+      const listEl = document.getElementById('history-list');
+      const filtered = cachedSignals.filter(s => {
+        if (historyFilter === 'all') return true;
+        if (historyFilter === '1h') return (s.timeframe || '1h') === '1h';
+        if (historyFilter === '3h') return s.timeframe === '3h';
+        return (s.direction || '').toUpperCase() === historyFilter.toUpperCase();
+      });
+
+      document.getElementById('hist-count-all').innerText = cachedSignals.length;
+      document.getElementById('hist-count-short').innerText = cachedSignals.filter(s => s.direction === 'SHORT').length;
+      document.getElementById('hist-count-long').innerText = cachedSignals.filter(s => s.direction === 'LONG').length;
+
+      if (!filtered.length) {
+        listEl.innerHTML = `
+          <div class="p-8 text-center text-slate-500 space-y-2">
+            <div class="text-3xl">📭</div>
+            <div class="text-sm font-medium text-slate-400">Сигналов в истории пока нет</div>
+            <div class="text-xs">При появлении сливов или накопления они сохраняются здесь на 3 суток.</div>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(s => {
+        const dt = new Date(s.timestamp * 1000);
+        const timeStr = dt.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const isShort = s.direction === 'SHORT';
+        const badgeColor = isShort ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40';
+        const patternName = s.pattern === 'SILENT_LP_ADD' ? 'ТИХАЯ ЗАЛИВКА LP' : (s.pattern === 'STEALTH_ACCUMULATION' ? 'СКРЫТЫЙ ВЫКУП' : 'СЛИВ ЛИКВИДНОСТИ');
+        const frVal = typeof s.funding_rate === 'number' ? `${s.funding_rate > 0 ? '+' : ''}${s.funding_rate.toFixed(4)}%` : null;
+        const tfBadge = s.timeframe === '3h'
+          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">⏳ 3ч</span>'
+          : '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">⚡ 1ч</span>';
+
+        const exchs = s.exchanges || (s.binance_vol > 0 ? ['binance'] : ['bybit']);
+        let exchBadges = exchs.map(e => e === 'bybit'
+          ? '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">Bybit</span>'
+          : '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Binance</span>'
+        ).join(' ');
+
+        let exchLinks = '';
+        if (exchs.includes('binance')) {
+          exchLinks += `
+            <a href="https://www.binance.com/en/futures/${s.symbol}USDT" target="_blank" class="px-2.5 py-1 rounded-lg bg-yellow-500/15 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 font-semibold transition-base">
+              🟡 Binance Futures
+            </a>
+          `;
+        }
+        if (exchs.includes('bybit')) {
+          exchLinks += `
+            <a href="https://www.bybit.com/trade/usdt/${s.symbol}USDT" target="_blank" class="px-2.5 py-1 rounded-lg bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 font-semibold transition-base">
+              🟠 Bybit Futures
+            </a>
+          `;
+        }
+        if (s.dex_url) {
+          exchLinks += `
+            <a href="${s.dex_url}" target="_blank" class="px-2.5 py-1 rounded-lg bg-[#182234] hover:bg-slate-700 text-slate-200 border border-slate-700 transition-base">
+              📈 DexScreener
+            </a>
+          `;
+        }
+
+        return `
+          <div class="p-4 rounded-xl card-surface border border-slate-700/60 hover:border-slate-600 transition-base space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold border ${badgeColor}">
+                  ${s.direction}
+                </span>
+                ${tfBadge}
+                <span class="text-xs font-mono font-bold text-white">${s.symbol} / ${s.quote_sym || 'USDT'}</span>
+                ${exchBadges}
+                <span class="text-[10px] text-slate-400 font-mono">(${s.chain}/${s.dex_id || 'dex'})</span>
+              </div>
+              <span class="text-[11px] text-slate-400 font-mono">${timeStr}</span>
+            </div>
+
+            <div class="flex items-center gap-2 text-xs">
+              <span class="px-2 py-0.5 rounded bg-[#0e1420] text-slate-300 font-medium">Паттерн: ${patternName}</span>
+              ${s.is_squeeze_fuel ? '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">🔥 Шорт-сквиз</span>' : ''}
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-[11px] font-mono inner-surface p-2.5 rounded-lg">
+              <div>
+                <span class="text-slate-500 block">Δ Квоты:</span>
+                <span class="font-bold ${s.quote_chg < 0 ? 'text-red-400' : 'text-emerald-400'}">
+                  ${s.quote_chg > 0 ? '+' : ''}${s.quote_chg}%
+                </span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Цена:</span>
+                <span class="text-white">${formatPrice(s.price_usd)} (${s.price_chg > 0 ? '+' : ''}${s.price_chg}%)</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Фандинг:</span>
+                <span class="${s.is_squeeze_fuel ? 'text-amber-400 font-bold' : 'text-slate-300'}">${frVal || '—'}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-1 text-xs flex-wrap">
+              ${exchLinks}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateSignalsUI() {
+      document.getElementById('badge-history-count').innerText = cachedSignals.length;
+
+      const activeShorts = poolsData.filter(isShortAlert).length;
+      const activeLongs = poolsData.filter(isLongAlert).length;
+      const activeSqueezes = poolsData.filter(isSqueezeAlert).length;
+
+      const binanceCount = poolsData.filter(p => (p.exchanges || ['binance']).includes('binance')).length;
+      const bybitCount = poolsData.filter(p => (p.exchanges || []).includes('bybit')).length;
+      const bEl = document.getElementById('chip-binance-count');
+      if (bEl) bEl.innerText = binanceCount;
+      const byEl = document.getElementById('chip-bybit-count');
+      if (byEl) byEl.innerText = bybitCount;
+
+      document.getElementById('metric-active-shorts').innerText = activeShorts;
+      document.getElementById('chip-shorts-count').innerText = activeShorts;
+      document.getElementById('metric-active-longs').innerText = activeLongs;
+      document.getElementById('chip-longs-count').innerText = activeLongs;
+      document.getElementById('metric-squeeze-count').innerText = activeSqueezes;
+      document.getElementById('chip-squeeze-count').innerText = activeSqueezes;
+
+      const shortBadge = document.getElementById('metric-short-badge');
+      if (activeShorts > 0) {
+        shortBadge.innerText = `${activeShorts} Внимание`;
+        shortBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400';
+      } else {
+        shortBadge.innerText = 'Спокойно';
+        shortBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+      }
+
+      const longBadge = document.getElementById('metric-long-badge');
+      if (activeLongs > 0) {
+        longBadge.innerText = `${activeLongs} Сигнал`;
+        longBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400';
+      } else {
+        longBadge.innerText = 'Спокойно';
+        longBadge.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+      }
+
+      // Top Banner
+      const banner = document.getElementById('signals-banner');
+      const bannerBox = document.getElementById('banner-icon-box');
+      const bannerTitle = document.getElementById('signals-banner-title');
+      const bannerBadge = document.getElementById('signals-banner-badge');
+      const bannerDesc = document.getElementById('signals-banner-desc');
+
+      if (activeShorts > 0 || activeLongs > 0) {
+        banner.classList.remove('hidden');
+        if (activeShorts > 0 && activeLongs === 0) {
+          banner.className = 'bg-gradient-to-r from-red-500/25 via-red-500/15 to-[#121824] border border-red-500/40 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl';
+          bannerBox.className = 'w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-lg shrink-0';
+          bannerTitle.innerText = `Обнаружен слив ликвидности (${activeShorts} пулов)!`;
+          bannerBadge.className = 'text-xs px-2 py-0.5 rounded bg-red-500/25 text-red-300 font-mono font-bold';
+          bannerBadge.innerText = 'SHORT OPPORTUNITY';
+          bannerDesc.innerText = 'Резервы DEX-пула выведены, но цена на фьючерсах Binance / Bybit ещё не упала.';
+        } else if (activeLongs > 0 && activeShorts === 0) {
+          banner.className = 'bg-gradient-to-r from-emerald-500/25 via-emerald-500/15 to-[#121824] border border-emerald-500/40 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl';
+          bannerBox.className = 'w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shrink-0';
+          bannerTitle.innerText = `Обнаружено скрытое накопление (${activeLongs} пулов)!`;
+          bannerBadge.className = 'text-xs px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 font-mono font-bold';
+          bannerBadge.innerText = 'LONG / PUMP RADAR';
+          bannerDesc.innerText = 'Приток стейблов и вымывание токенов из пула при высоком объёме покупок.';
+        } else {
+          banner.className = 'bg-gradient-to-r from-indigo-500/25 via-amber-500/15 to-[#121824] border border-indigo-500/40 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl';
+          bannerBox.className = 'w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shrink-0';
+          bannerTitle.innerText = `Активные сигналы: ${activeShorts} Шорт, ${activeLongs} Лонг!`;
+          bannerBadge.className = 'text-xs px-2 py-0.5 rounded bg-indigo-500/25 text-indigo-300 font-mono font-bold';
+          bannerBadge.innerText = 'MULTI-SIGNAL';
+          bannerDesc.innerText = 'Отслеживайте активные аномалии на спотовых пулах и фьючерсах Binance / Bybit.';
+        }
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('pool-table-body');
+      const emptyState = document.getElementById('empty-state');
+      const search = (document.getElementById('search-input').value || '').trim().toUpperCase();
+
+      // Update sort indicators
+      ['symbol', 'chain', 'liquidity_usd', 'quote_delta_pct', 'funding_rate', 'price_usd'].forEach(c => {
+        const span = document.getElementById(`sort-${c}`);
+        if (span) {
+          span.innerText = sortColumn === c ? (sortDirection === 'asc' ? '▲' : '▼') : '';
+        }
+      });
+
+      // Filter
+      let filtered = poolsData.filter(p => {
+        const sym = (p.symbol || '').toUpperCase();
+        const ch = (p.chain || '').toUpperCase();
+        const dex = (p.dex || '').toUpperCase();
+        const matchSearch = sym.includes(search) || ch.includes(search) || dex.includes(search);
+        if (!matchSearch) return false;
+
+        if (currentFilter === 'all') return true;
+        if (currentFilter === 'alerts') return isShortAlert(p) || isLongAlert(p);
+        if (currentFilter === 'shorts') return isShortAlert(p);
+        if (currentFilter === 'longs') return isLongAlert(p);
+        if (currentFilter === 'squeeze') return isSqueezeAlert(p);
+        if (currentFilter === 'binance') return (p.exchanges || ['binance']).includes('binance');
+        if (currentFilter === 'bybit') return (p.exchanges || []).includes('bybit');
+        return (p.chain || '').toLowerCase() === currentFilter.toLowerCase();
+      });
+
+      // Sort
+      filtered.sort((a, b) => {
+        let valA = a[sortColumn];
+        let valB = b[sortColumn];
+
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA === undefined || valA === null) valA = 0;
+        if (valB === undefined || valB === null) valB = 0;
+
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      updateSignalsUI();
+
+      document.getElementById('footer-count').innerText = `Показано монет: ${filtered.length} из ${poolsData.length}`;
+
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        const emptyText = document.getElementById('empty-text');
+        const emptySub = document.getElementById('empty-sub');
+        if (currentFilter === 'shorts' || currentFilter === 'alerts') {
+          emptyText.innerText = '🎉 Аномальных сливов ликвидности не зафиксировано!';
+          emptySub.innerText = 'Все отслеживаемые пулы работают в штатном режиме.';
+        } else if (currentFilter === 'longs') {
+          emptyText.innerText = '👀 Скрытых накоплений пока не зафиксировано';
+          emptySub.innerText = 'Радар сканирует пулы на тихий выкуп и добавление LP каждые 3 минуты.';
+        } else {
+          emptyText.innerText = 'По вашему запросу ничего не найдено';
+          emptySub.innerText = 'Попробуйте изменить поисковый запрос или выбрать другой фильтр.';
+        }
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      filtered.forEach(p => {
+        const isShort = isShortAlert(p);
+        const isLong = isLongAlert(p);
+        const isSqueeze = isSqueezeAlert(p);
+
+        let rowClass = 'hover:bg-[#151c2a] transition-base';
+        if (isShort) {
+          rowClass = 'bg-red-500/15 hover:bg-red-500/25 border-l-4 border-l-red-500 transition-base';
+        } else if (isLong) {
+          rowClass = 'bg-emerald-500/15 hover:bg-emerald-500/25 border-l-4 border-l-emerald-500 transition-base';
+        }
+
+        const deltaVal = p.quote_delta_pct || 0;
+        let deltaColor = 'text-slate-300';
+        if (deltaVal <= currentThreshold) {
+          deltaColor = 'text-red-400 font-extrabold bg-red-500/20 px-2 py-0.5 rounded shadow-sm';
+        } else if (deltaVal >= 8.0) {
+          deltaColor = 'text-emerald-400 font-extrabold bg-emerald-500/20 px-2 py-0.5 rounded shadow-sm';
+        } else if (deltaVal < 0) {
+          deltaColor = 'text-amber-400 font-medium';
+        } else {
+          deltaColor = 'text-emerald-400 font-medium';
+        }
+
+        const priceChg = p.price_delta_pct || 0;
+        const priceDeltaColor = priceChg >= 0 ? 'text-emerald-400' : 'text-red-400';
+
+        // Chain colors
+        let chainBadgeStyle = 'bg-slate-800 text-slate-300 border-slate-700';
+        const chLower = (p.chain || '').toLowerCase();
+        if (chLower === 'solana') chainBadgeStyle = 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+        else if (chLower === 'ethereum') chainBadgeStyle = 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+        else if (chLower === 'bsc') chainBadgeStyle = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+        else if (chLower === 'base') chainBadgeStyle = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
+
+        // Exchange badges & volumes
+        const exchs = p.exchanges || (p.binance_vol > 0 ? ['binance'] : ['bybit']);
+        const hasBinance = exchs.includes('binance');
+        const hasBybit = exchs.includes('bybit');
+
+        let exchBadgesHtml = '';
+        if (hasBinance && hasBybit) {
+          exchBadgesHtml = `
+            <span class="px-1 py-0.2 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">BIN</span>
+            <span class="px-1 py-0.2 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/40">BYB</span>
+          `;
+        } else if (hasBinance) {
+          exchBadgesHtml = `<span class="px-1 py-0.2 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">BIN</span>`;
+        } else if (hasBybit) {
+          exchBadgesHtml = `<span class="px-1 py-0.2 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/40">BYB</span>`;
+        }
+
+        let volParts = [];
+        if (hasBinance && p.binance_vol) volParts.push(`BIN: ${formatNumber(p.binance_vol)}`);
+        if (hasBybit && p.bybit_vol) volParts.push(`BYB: ${formatNumber(p.bybit_vol)}`);
+        const volSub = volParts.length ? volParts.join(' • ') : (hasBinance ? 'Binance Futures' : 'Bybit Futures');
+
+        // Funding rate formatting
+        const bFr = p.binance_funding;
+        const byFr = p.bybit_funding;
+        const fr = p.funding_rate;
+        let frHtml = '<span class="text-slate-500 font-mono">—</span>';
+
+        if (bFr !== undefined && bFr !== null && byFr !== undefined && byFr !== null) {
+          frHtml = `
+            <div class="font-mono text-xs ${bFr <= -0.02 ? 'text-amber-400 font-bold' : (bFr < 0 ? 'text-red-400' : 'text-slate-300')}">
+              🟡 ${bFr > 0 ? '+' : ''}${bFr.toFixed(4)}%
+            </div>
+            <div class="font-mono text-[11px] ${byFr <= -0.02 ? 'text-amber-400 font-bold' : (byFr < 0 ? 'text-red-400' : 'text-slate-400')}">
+              🟠 ${byFr > 0 ? '+' : ''}${byFr.toFixed(4)}%
+            </div>
+          `;
+        } else if (typeof fr === 'number') {
+          const frClass = isSqueeze 
+            ? 'text-amber-400 font-bold bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30' 
+            : (fr < 0 ? 'text-red-400 font-mono' : 'text-emerald-400 font-mono');
+          const exIcon = hasBybit && !hasBinance ? '🟠' : (hasBinance && !hasBybit ? '🟡' : '');
+          frHtml = `<span class="${frClass}">${isSqueeze ? '🔥 ' : ''}${exIcon} ${fr > 0 ? '+' : ''}${fr.toFixed(4)}%</span>`;
+        }
+
+        // Status badge
+        let statusBadge = `
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            ✓ Норма
+          </span>
+        `;
+        if (isShort) {
+          statusBadge = `
+            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-lg shadow-red-500/30 animate-pulse-fast">
+              🚨 ШОРТ
+            </span>
+          `;
+        } else if (isLong) {
+          const patternTxt = p.signal_pattern === 'SILENT_LP_ADD' ? 'ЛОНГ (LP)' : 'ЛОНГ (ВЫКУП)';
+          statusBadge = `
+            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 animate-pulse-fast">
+              🟢 ${patternTxt}
+            </span>
+          `;
+        }
+
+        // Action links
+        let actionsHtml = '';
+        if (hasBinance) {
+          actionsHtml += `
+            <a href="https://www.binance.com/en/futures/${p.symbol}USDT" target="_blank" onclick="event.stopPropagation()" title="Binance Futures" class="p-1.5 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 transition-base">
+              🟡
+            </a>
+          `;
+        }
+        if (hasBybit) {
+          actionsHtml += `
+            <a href="https://www.bybit.com/trade/usdt/${p.symbol}USDT" target="_blank" onclick="event.stopPropagation()" title="Bybit Futures" class="p-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 transition-base">
+              🟠
+            </a>
+          `;
+        }
+        actionsHtml += `
+          <a href="${p.url}" target="_blank" onclick="event.stopPropagation()" title="DexScreener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-300 transition-base">
+            <span>DEX</span>
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3">
+              <path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+            </svg>
+          </a>
+        `;
+
+        const tr = document.createElement('tr');
+        tr.className = `${rowClass} cursor-pointer`;
+        tr.onclick = (e) => {
+          if (e.target.tagName !== 'A' && !e.target.closest('a')) {
+            showModal(p);
+          }
+        };
+
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 font-semibold">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-[#182234] border border-slate-700/60 flex items-center justify-center font-bold text-xs text-amber-400 shadow-sm shrink-0">
+                ${(p.symbol || '?').charAt(0)}
+              </span>
+              <div>
+                <div class="font-bold text-white flex items-center gap-1.5 text-sm">
+                  <span>${p.symbol}</span>
+                  ${exchBadgesHtml}
+                  ${isShort ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse-fast shadow-md shadow-red-500"></span>' : ''}
+                  ${isLong ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse-fast shadow-md shadow-emerald-500"></span>' : ''}
+                </div>
+                <div class="text-[11px] text-slate-400 font-mono">
+                  ${volSub}
+                </div>
+              </div>
+            </div>
+          </td>
+
+          <td class="py-3.5 px-3">
+            <div class="flex items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-md text-[11px] font-mono capitalize border ${chainBadgeStyle}">
+                ${p.chain}
+              </span>
+              <span class="text-[11px] text-slate-400 uppercase font-mono">
+                ${p.dex}
+              </span>
+            </div>
+          </td>
+
+          <td class="py-3.5 px-3">
+            <span class="px-2 py-0.5 rounded-md font-mono text-xs bg-[#182234] border border-slate-700/70 text-slate-200 font-semibold">
+              ${p.quote_symbol || 'USDT'}
+            </span>
+          </td>
+
+          <td class="py-3.5 px-3 text-right font-bold text-white font-mono">
+            ${formatNumber(p.liquidity_usd)}
+          </td>
+
+          <td class="py-3.5 px-3 text-right">
+            <span class="${deltaColor}">
+              ${deltaVal > 0 ? '+' : ''}${deltaVal.toFixed(2)}%
+            </span>
+          </td>
+
+          <td class="py-3.5 px-3 text-right">
+            ${frHtml}
+          </td>
+
+          <td class="py-3.5 px-3 text-right">
+            <div class="font-mono font-bold text-white">${formatPrice(p.price_usd)}</div>
+            <div class="text-[11px] ${priceDeltaColor} font-mono">
+              ${priceChg >= 0 ? '+' : ''}${priceChg.toFixed(2)}%
+            </div>
+          </td>
+
+          <td class="py-3.5 px-3 text-center">
+            ${statusBadge}
+          </td>
+
+          <td class="py-3.5 px-4 text-right">
+            <div class="flex items-center justify-end gap-1.5">
+              ${actionsHtml}
+            </div>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function showModal(p) {
+      const modal = document.getElementById('pool-modal');
+      const icon = document.getElementById('modal-icon');
+      const title = document.getElementById('modal-title');
+      const sub = document.getElementById('modal-sub');
+      const content = document.getElementById('modal-content');
+      const dexLink = document.getElementById('modal-dex-link');
+      const binanceLink = document.getElementById('modal-binance-link');
+      const bybitLink = document.getElementById('modal-bybit-link');
+
+      const exchs = p.exchanges || (p.binance_vol > 0 ? ['binance'] : ['bybit']);
+      const hasBinance = exchs.includes('binance');
+      const hasBybit = exchs.includes('bybit');
+
+      icon.innerText = (p.symbol || '?').charAt(0);
+      title.innerText = `${p.symbol} / ${p.quote_symbol || 'USDT'}`;
+      sub.innerText = `${(p.chain || '').toUpperCase()} • ${(p.dex || '').toUpperCase()} (${(p.pair_address || '').slice(0, 6)}...${(p.pair_address || '').slice(-4)})`;
+      dexLink.href = p.url || '#';
+
+      if (hasBinance) {
+        binanceLink.style.display = 'inline-flex';
+        binanceLink.href = `https://www.binance.com/en/futures/${p.symbol}USDT`;
+      } else {
+        binanceLink.style.display = 'none';
+      }
+
+      if (hasBybit) {
+        bybitLink.style.display = 'inline-flex';
+        bybitLink.href = `https://www.bybit.com/trade/usdt/${p.symbol}USDT`;
+      } else {
+        bybitLink.style.display = 'none';
+      }
+
+      const isShort = isShortAlert(p);
+      const isLong = isLongAlert(p);
+      const isSqueeze = isSqueezeAlert(p);
+      const deltaVal = p.quote_delta_pct || 0;
+      const priceChg = p.price_delta_pct || 0;
+      const frStr = typeof p.funding_rate === 'number' ? `${p.funding_rate > 0 ? '+' : ''}${p.funding_rate.toFixed(4)}%` : 'н/д';
+
+      let alertBannerHtml = '';
+      if (isShort) {
+        alertBannerHtml = `
+          <div class="p-3.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 flex items-start gap-3">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 shrink-0 mt-0.5 text-red-400">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+            </svg>
+            <div>
+              <div class="font-bold text-red-200">Высокая вероятность падения (ШОРТ)!</div>
+              <div class="text-[11px] text-slate-300 mt-0.5">
+                Из пула выведено <b>${Math.abs(deltaVal).toFixed(1)}%</b> резерва ${p.quote_symbol}, а спотовая цена изменилась на <b>${priceChg > 0 ? '+' : ''}${priceChg.toFixed(2)}%</b>. Рекомендуется проверить шорт-позицию.
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (isLong) {
+        alertBannerHtml = `
+          <div class="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-start gap-3">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 shrink-0 mt-0.5 text-emerald-400">
+              <path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2zm0-6h2v4h-2z"/>
+            </svg>
+            <div>
+              <div class="font-bold text-emerald-200">Скрытое накопление / Лонг сетап!</div>
+              <div class="text-[11px] text-slate-300 mt-0.5">
+                Приток стейблов (+${deltaVal.toFixed(1)}%) и активный выкуп токенов из пула без резкого скачка цены.
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const squeezeBannerHtml = isSqueeze ? `
+        <div class="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center gap-2">
+          <span>🔥</span>
+          <span class="text-xs"><b>Шорт-сквиз топливо:</b> Отрицательный фандинг (${frStr}). Медведи платят за позиции!</span>
+        </div>
+      ` : '';
+
+      let frDetailsHtml = '';
+      if (p.binance_funding !== undefined && p.binance_funding !== null) {
+        frDetailsHtml += `<div class="text-[11px] text-slate-300">Binance: <span class="font-bold font-mono text-yellow-400">${p.binance_funding > 0 ? '+' : ''}${p.binance_funding.toFixed(4)}%</span></div>`;
+      }
+      if (p.bybit_funding !== undefined && p.bybit_funding !== null) {
+        frDetailsHtml += `<div class="text-[11px] text-slate-300">Bybit: <span class="font-bold font-mono text-orange-400">${p.bybit_funding > 0 ? '+' : ''}${p.bybit_funding.toFixed(4)}%</span></div>`;
+      }
+      if (!frDetailsHtml) {
+        frDetailsHtml = `<div class="text-sm font-bold font-mono text-white mt-0.5">${frStr}</div>`;
+      }
+
+      content.innerHTML = `
+        ${alertBannerHtml}
+        ${squeezeBannerHtml}
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="p-3 rounded-xl inner-surface">
+            <div class="text-slate-400">Текущий TVL:</div>
+            <div class="text-base font-bold font-mono text-white mt-0.5">${formatNumber(p.liquidity_usd)}</div>
+            <div class="text-[10px] text-slate-500">Было: ${formatNumber(p.prev_liquidity_usd || p.liquidity_usd)}</div>
+          </div>
+          <div class="p-3 rounded-xl inner-surface">
+            <div class="text-slate-400">Резерв ${p.quote_symbol || 'Quote'}:</div>
+            <div class="text-base font-bold font-mono text-white mt-0.5">${(p.quote_res || 0).toLocaleString()}</div>
+            <div class="text-[10px] ${deltaVal < 0 ? 'text-red-400 font-bold' : 'text-emerald-400'}">Дельта: ${deltaVal > 0 ? '+' : ''}${deltaVal.toFixed(2)}%</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="p-3 rounded-xl inner-surface">
+            <div class="text-slate-400">Цена на DEX:</div>
+            <div class="text-sm font-bold font-mono text-white mt-0.5">${formatPrice(p.price_usd)}</div>
+            <div class="text-[10px] ${priceChg >= 0 ? 'text-emerald-400' : 'text-red-400'} font-mono">Сдвиг: ${priceChg > 0 ? '+' : ''}${priceChg.toFixed(2)}%</div>
+          </div>
+          <div class="p-3 rounded-xl inner-surface">
+            <div class="text-slate-400">Фандинг ставка:</div>
+            <div class="mt-0.5 space-y-0.5">${frDetailsHtml}</div>
+            <div class="text-[10px] ${isSqueeze ? 'text-amber-400 font-bold' : 'text-slate-400'} mt-1">
+              ${isSqueeze ? '🔥 Отрицательная ставка' : 'Стандартный режим'}
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl inner-surface">
+          <div class="text-slate-400 mb-1">Contract Pair Address:</div>
+          <div class="font-mono text-[11px] select-all break-all text-amber-400">${p.pair_address || 'N/A'}</div>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('pool-modal').classList.add('hidden');
+    }
+
+    async function fetchLiveState() {
+      try {
+        const res = await fetch('/api/state');
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            if (data.pools && data.pools.length > 0) {
+              poolsData = data.pools;
+              document.getElementById('metric-total-pools').innerText = data.pools_count || poolsData.length;
+              document.getElementById('metric-total-tvl').innerText = `${formatNumber(data.total_tvl)} TVL`;
+            }
+
+            if (data.signals && data.signals.length > 0) {
+              cachedSignals = data.signals;
+              await saveSignalsToIndexedDB(data.signals);
+            }
+
+            renderTable();
+          }
+        }
+      } catch (e) {
+        console.warn('API /api/state недоступен, используется кэш:', e);
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        const drawer = document.getElementById('history-drawer');
+        if (drawer && !drawer.classList.contains('hidden')) {
+          drawer.classList.add('hidden');
+        }
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Сначала мгновенно достаем сохраненные за 3 дня сигналы из IndexedDB
+      try {
+        const idbSignals = await loadSignalsFromIndexedDB();
+        if (idbSignals && idbSignals.length) {
+          cachedSignals = idbSignals;
+          updateSignalsUI();
+        }
+      } catch (err) {
+        console.warn('Не удалось прочитать сигналы из IndexedDB:', err);
+      }
+
+      // 2. Делаем первый опрос сервера
+      fetchLiveState();
+
+      // 3. Запускаем периодический опрос каждые 10 секунд
+      setInterval(fetchLiveState, 10000);
+    });
+  </script>
+</body>
+</html>

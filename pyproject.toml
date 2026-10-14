@@ -1,0 +1,26 @@
+[project]
+name = "dexscreener-monitor"
+version = "0.1.0"
+description = "Liquidity drain & front-running short signal monitor for Binance Futures and DEX pools"
+authors = [
+    {name = "wikimodels", email = "55264797+wikimodels@users.noreply.github.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests (>=2.31.0,<3.0.0)",
+    "pydantic-settings (>=2.0.0,<3.0.0)",
+    "python-dotenv (>=1.0.0,<2.0.0)",
+    "rich (>=13.0.0,<16.0.0)",
+    "pymongo (>=4.18.3,<5.0.0)"
+]
+
+[project.scripts]
+dex-monitor = "dex_screener.cli:main"
+
+[tool.poetry]
+packages = [{include = "dex_screener", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
