@@ -279,8 +279,14 @@
               <th onclick="toggleSort('liquidity_usd')" class="py-3.5 px-3 text-right cursor-pointer hover:text-white transition-base select-none">
                 TVL ($) <span id="sort-liquidity_usd">▼</span>
               </th>
-              <th onclick="toggleSort('funding_rate')" class="py-3.5 px-4 text-right cursor-pointer hover:text-white transition-base select-none">
-                Фандинг <span id="sort-funding_rate"></span>
+              <th onclick="toggleSort('binance_funding')" class="py-3.5 px-3 text-right cursor-pointer hover:text-white transition-base select-none whitespace-nowrap">
+                🟡 Binance FR <span id="sort-binance_funding"></span>
+              </th>
+              <th onclick="toggleSort('bybit_funding')" class="py-3.5 px-3 text-right cursor-pointer hover:text-white transition-base select-none whitespace-nowrap">
+                🟠 Bybit FR <span id="sort-bybit_funding"></span>
+              </th>
+              <th onclick="toggleSort('signal_time')" class="py-3.5 px-4 text-center cursor-pointer hover:text-white transition-base select-none whitespace-nowrap">
+                Время срабатывания <span id="sort-signal_time"></span>
               </th>
             </tr>
           </thead>
@@ -949,7 +955,7 @@
       const search = (document.getElementById('search-input').value || '').trim().toUpperCase();
 
       // Update sort indicators
-      ['symbol', 'chain', 'liquidity_usd', 'funding_rate'].forEach(c => {
+      ['symbol', 'chain', 'liquidity_usd', 'binance_funding', 'bybit_funding', 'signal_time'].forEach(c => {
         const span = document.getElementById(`sort-${c}`);
         if (span) {
           span.innerText = sortColumn === c ? (sortDirection === 'asc' ? '▲' : '▼') : '';
@@ -981,8 +987,13 @@
 
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
-        if (valA === undefined || valA === null) valA = 0;
-        if (valB === undefined || valB === null) valB = 0;
+        if (sortColumn === 'signal_time' || sortColumn === 'binance_funding' || sortColumn === 'bybit_funding') {
+          if (valA === undefined || valA === null) valA = -999999;
+          if (valB === undefined || valB === null) valB = -999999;
+        } else {
+          if (valA === undefined || valA === null) valA = 0;
+          if (valB === undefined || valB === null) valB = 0;
+        }
 
         if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
         if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
@@ -1085,30 +1096,60 @@
         if (hasBybit && p.bybit_vol) volParts.push(`BYB: ${formatNumber(p.bybit_vol)}`);
         const volSub = volParts.length ? volParts.join(' • ') : (hasBinance ? 'Binance Futures' : 'Bybit Futures');
 
-        // Funding rate formatting
+        // Binance funding formatting
         const bFr = p.binance_funding;
-        const byFr = p.bybit_funding;
-        const fr = p.funding_rate;
-        let frHtml = '<span class="text-slate-500 font-mono">—</span>';
-
-        if (bFr !== undefined && bFr !== null && byFr !== undefined && byFr !== null) {
-          frHtml = `
-            <div class="font-mono text-xs ${bFr <= -0.02 ? 'text-amber-400 font-bold' : (bFr < 0 ? 'text-red-400' : 'text-slate-300')}">
-              🟡 ${bFr > 0 ? '+' : ''}${bFr.toFixed(4)}%
-            </div>
-            <div class="font-mono text-[11px] ${byFr <= -0.02 ? 'text-amber-400 font-bold' : (byFr < 0 ? 'text-red-400' : 'text-slate-400')}">
-              🟠 ${byFr > 0 ? '+' : ''}${byFr.toFixed(4)}%
-            </div>
-          `;
-        } else if (typeof fr === 'number') {
-          const frClass = isSqueeze 
+        let bFrHtml = '<span class="text-slate-600 font-mono text-xs">—</span>';
+        if (typeof bFr === 'number') {
+          const isExtremeSqueeze = bFr <= -0.02;
+          const isNeg = bFr < 0;
+          let clr = isExtremeSqueeze 
             ? 'text-amber-400 font-bold bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30' 
-            : (fr < 0 ? 'text-red-400 font-mono' : 'text-emerald-400 font-mono');
-          const exIcon = hasBybit && !hasBinance ? '🟠' : (hasBinance && !hasBybit ? '🟡' : '');
-          frHtml = `<span class="${frClass}">${isSqueeze ? '🔥 ' : ''}${exIcon} ${fr > 0 ? '+' : ''}${fr.toFixed(4)}%</span>`;
+            : (isNeg ? 'text-red-400 font-bold' : 'text-slate-300 font-medium');
+          bFrHtml = `<span class="font-mono text-xs ${clr}">${isExtremeSqueeze ? '🔥 ' : ''}${bFr > 0 ? '+' : ''}${bFr.toFixed(4)}%</span>`;
         }
 
+        // Bybit funding formatting
+        const byFr = p.bybit_funding;
+        let byFrHtml = '<span class="text-slate-600 font-mono text-xs">—</span>';
+        if (typeof byFr === 'number') {
+          const isExtremeSqueeze = byFr <= -0.02;
+          const isNeg = byFr < 0;
+          let clr = isExtremeSqueeze 
+            ? 'text-amber-400 font-bold bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30' 
+            : (isNeg ? 'text-red-400 font-bold' : 'text-slate-300 font-medium');
+          byFrHtml = `<span class="font-mono text-xs ${clr}">${isExtremeSqueeze ? '🔥 ' : ''}${byFr > 0 ? '+' : ''}${byFr.toFixed(4)}%</span>`;
+        }
 
+        // Signal time formatting (число и месяц с подсказкой)
+        let timeCellHtml = '<span class="text-slate-600 font-mono text-xs">—</span>';
+        if (p.signal_time) {
+          const d = new Date(p.signal_time * 1000);
+          const timeOnly = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const dayMonth = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+          const fullDateTime = `${d.toLocaleDateString('ru-RU')} ${timeOnly}`;
+          const secAgo = Math.max(0, Math.floor(Date.now() / 1000 - p.signal_time));
+          let relTime = '';
+          if (secAgo < 60) {
+            relTime = `${secAgo}с назад`;
+          } else if (secAgo < 3600) {
+            relTime = `${Math.floor(secAgo / 60)}м назад`;
+          } else if (secAgo < 86400) {
+            relTime = `${Math.floor(secAgo / 3600)}ч назад`;
+          } else {
+            relTime = `${Math.floor(secAgo / 86400)}д назад`;
+          }
+
+          const highlightClass = isShort
+            ? 'text-red-400 font-bold'
+            : (isLong ? 'text-emerald-400 font-bold' : 'text-slate-300 font-medium');
+
+          timeCellHtml = `
+            <div class="text-center font-mono inline-block whitespace-nowrap" title="${fullDateTime} (${relTime})">
+              <div class="text-xs ${highlightClass}">${timeOnly}</div>
+              <div class="text-[10px] text-slate-400 font-medium">${dayMonth}</div>
+            </div>
+          `;
+        }
 
         const tr = document.createElement('tr');
         tr.className = `${rowClass} cursor-pointer`;
@@ -1159,8 +1200,16 @@
             ${formatNumber(p.liquidity_usd)}
           </td>
 
-          <td class="py-3.5 px-4 text-right">
-            ${frHtml}
+          <td class="py-3.5 px-3 text-right whitespace-nowrap">
+            ${bFrHtml}
+          </td>
+
+          <td class="py-3.5 px-3 text-right whitespace-nowrap">
+            ${byFrHtml}
+          </td>
+
+          <td class="py-3.5 px-4 text-center whitespace-nowrap">
+            ${timeCellHtml}
           </td>
         `;
 
