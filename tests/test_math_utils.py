@@ -249,6 +249,84 @@ class TestMathUtils(unittest.TestCase):
         self.assertFalse(is_long)
         self.assertEqual(l_metrics["z_quote"], 0.0)
 
+    def test_eval_short_z_anomaly_track_modes(self):
+        # 15 снимков стабильного пула
+        snapshots = []
+        for i in range(15):
+            snapshots.append({
+                "quote_res": 100_000.0 + (i % 3 - 1) * 500.0,
+                "price_usd": 2.00,
+                "liq_usd": 200_000.0 + (i % 3 - 1) * 1000.0,
+            })
+
+        # Сценарий A: quote_res упал, но TVL не упал (например, base токен подорожал)
+        # При track_mode="usd" сигнала быть не должно
+        is_sig_usd, _ = eval_short_z_anomaly(
+            snapshots,
+            current_quote_res=80_000.0,  # -20%
+            current_price_usd=2.00,
+            current_tvl_usd=200_000.0,   # TVL на месте
+            track_mode="usd",
+            min_economic_drop_pct=-6.0,
+        )
+        self.assertFalse(is_sig_usd)
+
+        # При track_mode="both" оба должны просесть
+        is_sig_both, _ = eval_short_z_anomaly(
+            snapshots,
+            current_quote_res=80_000.0,  # -20%
+            current_price_usd=2.00,
+            current_tvl_usd=200_000.0,   # TVL на месте
+            track_mode="both",
+            min_economic_drop_pct=-6.0,
+        )
+        self.assertFalse(is_sig_both)
+
+        # Если оба просели:
+        is_sig_both_ok, m = eval_short_z_anomaly(
+            snapshots,
+            current_quote_res=80_000.0,
+            current_price_usd=2.00,
+            current_tvl_usd=160_000.0,
+            track_mode="both",
+            min_economic_drop_pct=-6.0,
+        )
+        self.assertTrue(is_sig_both_ok)
+
+    def test_eval_short_z_anomaly_rejected_if_price_pumped(self):
+        snapshots = [{"quote_res": 100_000.0, "price_usd": 2.00, "liq_usd": 200_000.0} for _ in range(15)]
+        # Резерв упал, но цена улетела вверх на +10% (> max_price_pump_pct=4.0)
+        is_sig, _ = eval_short_z_anomaly(
+            snapshots,
+            current_quote_res=80_000.0,
+            current_price_usd=2.20,
+            current_tvl_usd=160_000.0,
+            max_price_pump_pct=4.0,
+        )
+        self.assertFalse(is_sig)
+
+    def test_eval_long_z_anomaly_rejected_if_price_dumping(self):
+        # Токены выгребают и стейблы заливают, но цена камнем летит вниз (< min_price_gain_pct=-0.5%)
+        snapshots = []
+        for i in range(15):
+            snapshots.append({
+                "quote_res": 50_000.0 + (i % 3 - 1) * 400.0,
+                "base_res": 100_000.0 + (i % 3 - 1) * 800.0,
+                "price_usd": 1.00 + (i % 2 - 0.5) * 0.002,
+            })
+
+        curr_quote = 60_000.0  # +20%
+        curr_base = 85_000.0   # -15%
+        curr_price = 0.85      # -15% дамп цены
+
+        is_sig, metrics = eval_long_z_anomaly(
+            snapshots,
+            curr_quote,
+            curr_base,
+            curr_price,
+            min_price_gain_pct=-0.5,
+        )
+        self.assertFalse(is_sig)
     def test_corrupt_snapshots_graceful_handling(self):
         # Наличие None, нечисловых строк, пустых словарей не ломает расчет
         dirty_snapshots = [

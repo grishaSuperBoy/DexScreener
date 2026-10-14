@@ -472,12 +472,13 @@ def cmd_ui(args):
                         and funding_rate <= settings.squeeze_funding_threshold_pct
                     )
 
-                    # Ищем свежий сигнал по адресу пула в истории за 72ч
+                    # Ищем свежий сигнал по адресу пула в истории за 72ч (синхронизация с Z-Score алертами)
                     recent_sig = next(
                         (s for s in signals_3d if s.get("pair_address") == info.get("pair_address")),
                         None,
                     )
                     is_long = bool(recent_sig and recent_sig.get("direction") == "LONG")
+                    is_short = is_short or bool(recent_sig and recent_sig.get("direction") == "SHORT")
                     sig_direction = recent_sig.get("direction") if recent_sig else ("SHORT" if is_short else None)
                     sig_pattern = recent_sig.get("pattern") if recent_sig else ("LIQ_DRAIN" if is_short else None)
 

@@ -27,14 +27,13 @@ class PoolMonitor:
         funding_rates: Dict[str, float] | None = None,
     ) -> List[Dict[str, Any]]:
         """
-        Проверяет пулы в скользящем часовом окне:
-        1) Ищет вывод ликвидности от пика за час (SHORT).
-        2) Ищет тихую заливку пула или скрытый выкуп от дна за час (LONG / ACCUMULATION).
+        Проверяет пулы в скользящем окне (1ч и 3ч):
+        1) Ищет вывод ликвидности от пика за окно (SHORT).
+        2) Ищет тихую заливку пула или скрытый выкуп от дна за окно (LONG / ACCUMULATION).
         Сохраняет все сработавшие сигналы на 3 суток в signals_history.json.
         """
         now = time.time()
         funding_rates = funding_rates or {}
-        window_sec = getattr(self.settings, "window_sec", 3600)
         max_pump_pct = getattr(self.settings, "max_price_pump_pct", 4.0)
         triggered_signals: List[Dict[str, Any]] = []
 
@@ -54,7 +53,7 @@ class PoolMonitor:
 
             base_info = p.get("baseToken") or {}
             quote_info = p.get("quoteToken") or {}
-            # Берем канонический тикер из нашей карты Binance (если есть), иначе из пула
+            # Берем канонический тикер из нашей карты (если есть), иначе из пула
             map_info = self.dex_map.get(key, {})
             sym = map_info.get("symbol") or base_info.get("symbol", "UNKNOWN")
             quote_sym = quote_info.get("symbol", "")
@@ -66,7 +65,6 @@ class PoolMonitor:
             sells_h1 = int(safe_float(txns_h1.get("sells")))
             vol_h1 = safe_float((p.get("volume") or {}).get("h1"))
 
-            map_info = self.dex_map.get(key, {})
             exchanges = map_info.get("exchanges") or (["binance"] if map_info.get("binance_vol", 0) > 0 else ["bybit"])
 
             fr_raw = funding_rates.get(sym.upper())
@@ -81,7 +79,6 @@ class PoolMonitor:
 
             prev_state = self.state.get(key, {})
             history = prev_state.get("history", [])
-            last_alert_time = prev_state.get("last_alert_at", 0)
 
             # Миграция старого стейта, если истории еще не было
             if not history and prev_state.get("quote_res", 0) > 0:
@@ -123,8 +120,9 @@ class PoolMonitor:
                     if tf_name == "3h" and span_sec < 4200:
                         continue
 
-                    # Множитель порогов для 3-часового окна (требуем более весомого изменения за 3 часа)
+                    # Множители порогов для 3-часового окна (требуем более весомого изменения за 3 часа)
                     tf_mult = getattr(self.settings, "tf_3h_threshold_multiplier", 1.45) if tf_name == "3h" else 1.0
+                    z_tf_mult = 1.15 if tf_name == "3h" else 1.0
                     tf_hours = tf_seconds / 3600.0
 
                     is_cooldown_expired = (now - last_alert_map.get(tf_name, 0)) >= self.settings.alert_cooldown_sec
@@ -181,11 +179,13 @@ class PoolMonitor:
                                 current_quote_res=quote_res,
                                 current_price_usd=price_usd,
                                 current_tvl_usd=liq_usd,
-                                z_short_threshold=self.settings.z_short_threshold * (1.15 if tf_name == "3h" else 1.0),
+                                z_short_threshold=self.settings.z_short_threshold * z_tf_mult,
                                 z_price_lag_max=self.settings.z_price_lag_max,
                                 max_price_drop_pct=self.settings.max_price_drop_pct,
-                                min_economic_drop_pct=self.settings.liq_drop_threshold_pct * 0.5,
+                                max_price_pump_pct=max_pump_pct,
+                                min_economic_drop_pct=(self.settings.liq_drop_threshold_pct * 0.5) * tf_mult,
                                 min_samples=self.settings.z_min_samples,
+                                track_mode=self.settings.track_mode,
                             )
                             is_liq_drained = is_z_short
                             is_price_lagging = is_z_short
@@ -308,13 +308,13 @@ class PoolMonitor:
                                 current_quote_res=quote_res,
                                 current_base_res=base_res,
                                 current_price_usd=price_usd,
-                                z_quote_threshold=self.settings.z_long_quote_threshold,
-                                z_base_threshold=self.settings.z_long_base_threshold,
+                                z_quote_threshold=self.settings.z_long_quote_threshold * z_tf_mult,
+                                z_base_threshold=self.settings.z_long_base_threshold * z_tf_mult,
                                 # LONG: цена ещё не улетела (z_long_price_max=1.5σ)
                                 # SHORT-аналог: z_price_lag_max=1.2σ — разные концепции, не путать!
                                 z_price_max=self.settings.z_long_price_max,
                                 max_price_gain_pct=self.settings.stealth_buy_max_price_pct,
-                                min_economic_gain_pct=self.settings.stealth_buy_quote_pct * 0.6,
+                                min_economic_gain_pct=(self.settings.stealth_buy_quote_pct * 0.6) * tf_mult,
                                 min_samples=self.settings.z_min_samples,
                             )
                             # При статистической аномалии требуем минимальной активности покупателей
