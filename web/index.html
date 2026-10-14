@@ -460,6 +460,14 @@
           <a id="modal-bybit-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#f7a600] text-slate-950 hover:bg-orange-400 transition-base cursor-pointer shadow-lg shadow-orange-500/10">
             <span>🟠 Bybit Futures</span>
           </a>
+          <a id="modal-tv-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#2962FF] text-white hover:bg-blue-600 transition-base cursor-pointer shadow-lg shadow-blue-500/10">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M4 19h4V5H4v14zm6 0h4V9h-4v10zm6 0h4v-6h-4v6z"/></svg>
+            <span>TradingView (.P)</span>
+          </a>
+          <a id="modal-cg-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-base cursor-pointer shadow-lg shadow-cyan-500/10">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            <span>CoinGlass TV</span>
+          </a>
           <a id="modal-dex-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-base cursor-pointer shadow-lg shadow-amber-500/10">
             <span>📈 DexScreener</span>
           </a>
@@ -624,6 +632,55 @@
       return Boolean(p.is_squeeze_fuel || (typeof p.funding_rate === 'number' && p.funding_rate <= -0.02));
     }
 
+    // =========================================================================
+    // COIN LINKS SERVICE (TradingView .P, CoinGlass TV, Binance Futures, Bybit)
+    // Строго на PERPETUALS (никакого спота)
+    // =========================================================================
+    function getCoinGlassLink(symbol, exchanges) {
+      if (!symbol) return '';
+      exchanges = exchanges || [];
+      const sym = symbol.toUpperCase();
+      const hasBinance = exchanges.some(e => e.toLowerCase().includes('binance'));
+      const hasBybit = exchanges.some(e => e.toLowerCase().includes('bybit'));
+
+      if (hasBinance) {
+        return `https://www.coinglass.com/tv/Binance_${sym}USDT`;
+      }
+      if (hasBybit && !hasBinance) {
+        return `https://www.coinglass.com/tv/Bybit_${sym}USDT`;
+      }
+      return '';
+    }
+
+    function getTradingViewLink(symbol, exchanges) {
+      if (!symbol) return '';
+      exchanges = exchanges || [];
+      const sym = symbol.toUpperCase();
+      const hasBybit = exchanges.some(e => e.toLowerCase().includes('bybit'));
+      const hasBinance = exchanges.some(e => e.toLowerCase().includes('binance'));
+
+      if (hasBybit) {
+        return `https://www.tradingview.com/chart?symbol=BYBIT:${sym}USDT.P`;
+      }
+      if (hasBinance && !hasBybit) {
+        return `https://www.tradingview.com/chart?symbol=BINANCE:${sym}USDT.P`;
+      }
+      return '';
+    }
+
+    function getExchangeLink(symbol, exchange) {
+      if (!symbol) return '';
+      const sym = symbol.toUpperCase();
+      const ex = (exchange || '').toLowerCase();
+      if (ex.includes('binance')) {
+        return `https://www.binance.com/en/futures/${sym}USDT`;
+      }
+      if (ex.includes('bybit')) {
+        return `https://www.bybit.com/trade/usdt/${sym}USDT`;
+      }
+      return '';
+    }
+
     function toggleSort(col) {
       if (sortColumn === col) {
         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -773,6 +830,22 @@
           exchLinks += `
             <a href="https://www.bybit.com/trade/usdt/${s.symbol}USDT" target="_blank" class="px-2.5 py-1 rounded-lg bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 font-semibold transition-base">
               🟠 Bybit Futures
+            </a>
+          `;
+        }
+        const histTvUrl = getTradingViewLink(s.symbol, exchs);
+        if (histTvUrl) {
+          exchLinks += `
+            <a href="${histTvUrl}" target="_blank" class="px-2.5 py-1 rounded-lg bg-[#2962FF]/15 hover:bg-[#2962FF]/25 text-blue-400 border border-[#2962FF]/30 font-semibold transition-base">
+              📊 TradingView (.P)
+            </a>
+          `;
+        }
+        const histCgUrl = getCoinGlassLink(s.symbol, exchs);
+        if (histCgUrl) {
+          exchLinks += `
+            <a href="${histCgUrl}" target="_blank" class="px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 font-semibold transition-base">
+              🔍 CoinGlass TV
             </a>
           `;
         }
@@ -1018,22 +1091,50 @@
         else if (chLower === 'bsc') chainBadgeStyle = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
         else if (chLower === 'base') chainBadgeStyle = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
 
-        // Exchange badges & volumes
+        // Exchange badges & volumes (Perps only)
         const exchs = p.exchanges || (p.binance_vol > 0 ? ['binance'] : ['bybit']);
         const hasBinance = exchs.includes('binance');
         const hasBybit = exchs.includes('bybit');
 
-        let exchBadgesHtml = '';
-        if (hasBinance && hasBybit) {
-          exchBadgesHtml = `
-            <span class="px-1 py-0.2 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">BIN</span>
-            <span class="px-1 py-0.2 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/40">BYB</span>
+        const binancePerpUrl = getExchangeLink(p.symbol, 'binance');
+        const bybitPerpUrl = getExchangeLink(p.symbol, 'bybit');
+        const tvUrl = getTradingViewLink(p.symbol, exchs);
+        const cgUrl = getCoinGlassLink(p.symbol, exchs);
+
+        let exchBadgesHtml = '<div class="inline-flex items-center gap-1 flex-wrap">';
+        if (hasBinance) {
+          exchBadgesHtml += `
+            <a href="${binancePerpUrl}" target="_blank" onclick="event.stopPropagation()" title="Binance Futures (${p.symbol}USDT Perp)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/35 border border-yellow-500/40 transition-base cursor-pointer">
+              BIN
+            </a>
           `;
-        } else if (hasBinance) {
-          exchBadgesHtml = `<span class="px-1 py-0.2 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">BIN</span>`;
-        } else if (hasBybit) {
-          exchBadgesHtml = `<span class="px-1 py-0.2 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/40">BYB</span>`;
         }
+        if (hasBybit) {
+          exchBadgesHtml += `
+            <a href="${bybitPerpUrl}" target="_blank" onclick="event.stopPropagation()" title="Bybit Futures (${p.symbol}USDT Perp)" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 hover:bg-orange-500/35 border border-orange-500/40 transition-base cursor-pointer">
+              BYB
+            </a>
+          `;
+        }
+        if (tvUrl) {
+          const tvExch = hasBybit ? 'BYBIT' : 'BINANCE';
+          exchBadgesHtml += `
+            <a href="${tvUrl}" target="_blank" onclick="event.stopPropagation()" title="TradingView Perp Chart (${tvExch}:${p.symbol}USDT.P)" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#2962FF]/20 text-[#3b82f6] hover:bg-[#2962FF]/35 hover:text-blue-300 border border-[#2962FF]/40 transition-base cursor-pointer">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5"><path d="M4 19h4V5H4v14zm6 0h4V9h-4v10zm6 0h4v-6h-4v6z"/></svg>
+              <span>TV</span>
+            </a>
+          `;
+        }
+        if (cgUrl) {
+          const cgExch = hasBinance ? 'Binance' : 'Bybit';
+          exchBadgesHtml += `
+            <a href="${cgUrl}" target="_blank" onclick="event.stopPropagation()" title="CoinGlass Perp Chart (${cgExch}_${p.symbol}USDT)" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/35 hover:text-cyan-300 border border-cyan-500/40 transition-base cursor-pointer">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+              <span>CG</span>
+            </a>
+          `;
+        }
+        exchBadgesHtml += '</div>';
 
         let volParts = [];
         if (hasBinance && p.binance_vol) volParts.push(`BIN: ${formatNumber(p.binance_vol)}`);
@@ -1084,24 +1185,38 @@
           `;
         }
 
-        // Action links
+        // Action links (Perps & Tools)
         let actionsHtml = '';
         if (hasBinance) {
           actionsHtml += `
-            <a href="https://www.binance.com/en/futures/${p.symbol}USDT" target="_blank" onclick="event.stopPropagation()" title="Binance Futures" class="p-1.5 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 transition-base">
+            <a href="${binancePerpUrl}" target="_blank" onclick="event.stopPropagation()" title="Binance Futures (${p.symbol}USDT Perp)" class="p-1.5 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 transition-base cursor-pointer">
               🟡
             </a>
           `;
         }
         if (hasBybit) {
           actionsHtml += `
-            <a href="https://www.bybit.com/trade/usdt/${p.symbol}USDT" target="_blank" onclick="event.stopPropagation()" title="Bybit Futures" class="p-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 transition-base">
+            <a href="${bybitPerpUrl}" target="_blank" onclick="event.stopPropagation()" title="Bybit Futures (${p.symbol}USDT Perp)" class="p-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 transition-base cursor-pointer">
               🟠
             </a>
           `;
         }
+        if (tvUrl) {
+          actionsHtml += `
+            <a href="${tvUrl}" target="_blank" onclick="event.stopPropagation()" title="TradingView Perp Chart" class="p-1.5 rounded-lg bg-[#2962FF]/10 hover:bg-[#2962FF]/25 text-blue-400 border border-[#2962FF]/30 transition-base cursor-pointer">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M4 19h4V5H4v14zm6 0h4V9h-4v10zm6 0h4v-6h-4v6z"/></svg>
+            </a>
+          `;
+        }
+        if (cgUrl) {
+          actionsHtml += `
+            <a href="${cgUrl}" target="_blank" onclick="event.stopPropagation()" title="CoinGlass Perp Chart" class="p-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 transition-base cursor-pointer">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </a>
+          `;
+        }
         actionsHtml += `
-          <a href="${p.url}" target="_blank" onclick="event.stopPropagation()" title="DexScreener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-300 transition-base">
+          <a href="${p.url}" target="_blank" onclick="event.stopPropagation()" title="DexScreener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-[#182234] hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-300 transition-base cursor-pointer">
             <span>DEX</span>
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3">
               <path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
@@ -1109,12 +1224,13 @@
           </a>
         `;
 
-        // Signal time formatting
+        // Signal time formatting (число и месяц вместо "4ч назад")
         let timeCellHtml = '<span class="text-slate-600 font-mono text-xs">—</span>';
         if (p.signal_time) {
           const d = new Date(p.signal_time * 1000);
           const timeOnly = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          const dateOnly = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+          const dayMonth = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+          const fullDateTime = `${d.toLocaleDateString('ru-RU')} ${timeOnly}`;
           const secAgo = Math.max(0, Math.floor(Date.now() / 1000 - p.signal_time));
           let relTime = '';
           if (secAgo < 60) {
@@ -1132,9 +1248,9 @@
             : (isLong ? 'text-emerald-400 font-bold' : 'text-slate-300 font-medium');
 
           timeCellHtml = `
-            <div class="text-center font-mono inline-block" title="${dateOnly} ${timeOnly}">
+            <div class="text-center font-mono inline-block" title="${fullDateTime} (${relTime})">
               <div class="text-xs ${highlightClass}">${timeOnly}</div>
-              <div class="text-[10px] text-slate-500">${relTime}</div>
+              <div class="text-[10px] text-slate-400 font-medium">${dayMonth}</div>
             </div>
           `;
         }
@@ -1255,6 +1371,29 @@
         bybitLink.href = `https://www.bybit.com/trade/usdt/${p.symbol}USDT`;
       } else {
         bybitLink.style.display = 'none';
+      }
+
+      const tvLink = document.getElementById('modal-tv-link');
+      const cgLink = document.getElementById('modal-cg-link');
+      const modalTvUrl = getTradingViewLink(p.symbol, exchs);
+      const modalCgUrl = getCoinGlassLink(p.symbol, exchs);
+
+      if (tvLink) {
+        if (modalTvUrl) {
+          tvLink.style.display = 'inline-flex';
+          tvLink.href = modalTvUrl;
+        } else {
+          tvLink.style.display = 'none';
+        }
+      }
+
+      if (cgLink) {
+        if (modalCgUrl) {
+          cgLink.style.display = 'inline-flex';
+          cgLink.href = modalCgUrl;
+        } else {
+          cgLink.style.display = 'none';
+        }
       }
 
       const isShort = isShortAlert(p);
