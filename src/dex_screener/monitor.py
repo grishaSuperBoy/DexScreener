@@ -310,7 +310,9 @@ class PoolMonitor:
                                 current_price_usd=price_usd,
                                 z_quote_threshold=self.settings.z_long_quote_threshold,
                                 z_base_threshold=self.settings.z_long_base_threshold,
-                                z_price_max=self.settings.z_price_lag_max,
+                                # Лонг: цена ещё не сильно выросла (≤ 1.5σ — дефолт eval_long_z_anomaly)
+                                # Не путать с z_price_lag_max (1.2σ) — это шорт-порог запаздывания!
+                                z_price_max=1.5,
                                 max_price_gain_pct=self.settings.stealth_buy_max_price_pct,
                                 min_economic_gain_pct=self.settings.stealth_buy_quote_pct * 0.6,
                                 min_samples=self.settings.z_min_samples,
