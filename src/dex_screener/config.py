@@ -33,7 +33,8 @@ class Settings(BaseSettings):
     # Z-Score Engine (Статистический анализ аномалий)
     enable_z_score_mode: bool = True  # Использовать динамический Z-Score анализ вместо жестких %
     z_short_threshold: float = -2.2  # Статистический порог слива (резервы упали на >= 2.2 сигмы)
-    z_price_lag_max: float = 1.2  # Допустимый лаг цены в сигмах (цена не обвалилась)
+    z_price_lag_max: float = 1.2  # SHORT: допустимый лаг цены в сигмах (цена не обвалилась)
+    z_long_price_max: float = 1.5  # LONG: максимальный рост цены в сигмах (не успела улететь)
     z_long_quote_threshold: float = 2.0  # Порог аномального притока стейблов (+2.0 сигмы)
     z_long_base_threshold: float = -1.8  # Порог аномального выгребания токенов (-1.8 сигмы)
     z_min_samples: int = 8  # Минимальное кол-во слепков для достоверного расчета Z-Score
