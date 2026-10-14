@@ -155,45 +155,92 @@ class PoolMonitor:
                     is_liq_drained = primary_drop <= self.settings.liq_drop_threshold_pct
                     is_price_lagging = self.settings.max_price_drop_pct <= short_price_chg <= max_pump_pct
 
-                    if is_liq_drained and is_price_lagging:
-                        sig_obj = {
-                            "id": f"{sym.lower()}_{tf_name}_{uuid.uuid4().hex[:6]}",
-                            "timestamp": now,
-                            "timeframe": tf_name,
-                            "timeframe_sec": tf_seconds,
-                            "direction": "SHORT",
-                            "pattern": "LIQ_DRAIN",
-                            "symbol": sym,
-                            "chain": chain,
-                            "pair_address": addr,
-                            "dex_id": dex_id,
-                            "quote_sym": quote_sym,
-                            "quote_chg": round(short_quote_chg, 2),
-                            "base_chg": round(short_base_chg, 2),
-                            "usd_chg": round(short_usd_chg, 2),
-                            "prev_quote_res": max_quote,
-                            "curr_quote_res": quote_res,
-                            "prev_tvl_usd": max_liq_usd,
-                            "curr_tvl_usd": liq_usd,
-                            "price_usd": price_usd,
-                            "price_chg": round(short_price_chg, 2),
-                            "buys_h1": buys_h1,
-                            "sells_h1": sells_h1,
-                            "vol_h1_usd": vol_h1,
-                            "funding_rate": funding_rate,
-                            "binance_funding": binance_fr,
-                            "bybit_funding": bybit_fr,
-                            "exchanges": exchanges,
-                            "is_squeeze_fuel": False,
-                            "dex_url": url,
-                        }
+                    # =========================================================================
+                    # ДИНАМИЧЕСКИЕ ПРОВЕРКИ КАЧЕСТВА ЛИКВИДНОСТИ (Dynamic Health Filters)
+                    # =========================================================================
+                    # 1. Синхронность (Когерентность): Падение TVL vs Падение Резерва Котировки
+                    coherence_ratio = (
+                        abs(short_usd_chg) / abs(short_quote_chg)
+                        if abs(short_quote_chg) > 0.001
+                        else 1.0
+                    )
+                    is_coherent = coherence_ratio >= self.settings.min_drain_coherence_ratio
 
-                        if is_cooldown_expired:
-                            triggered_signals.append(sig_obj)
-                            notify_signal(self.settings.tg_bot_token, self.settings.tg_chat_id, sig_obj)
-                            last_alert_map[tf_name] = now
+                    # 2. Рыночный импакт (Drain-to-Volume Ratio):
+                    is_stable = quote_sym in {"USDT", "USDC", "BUSD", "USD", "DAI", "FDUSD", "TUSD"}
+                    quote_drain_usd = abs(max_quote - quote_res) if is_stable else 0.0
+                    tvl_drain_usd = abs(max_liq_usd - liq_usd)
+                    real_drain_usd = max(tvl_drain_usd, quote_drain_usd)
+
+                    binance_vol = map_info.get("binance_vol", 0.0)
+                    bybit_vol = map_info.get("bybit_vol", 0.0)
+                    cex_hourly_vol = (binance_vol + bybit_vol) / 24.0
+                    total_hourly_vol = cex_hourly_vol + vol_h1
+
+                    impact_ratio = (real_drain_usd / total_hourly_vol) if total_hourly_vol > 0 else 0.0
+                    is_impactful = impact_ratio >= self.settings.min_drain_impact_pct
+
+                    # 3. Активность пула (Transaction Velocity):
+                    total_txns_h1 = buys_h1 + sells_h1
+                    is_active_pool = total_txns_h1 >= self.settings.min_pool_txns_h1
+
+                    # 4. Баланс пула (Quote Share in TVL):
+                    quote_val_usd = quote_res if is_stable else (liq_usd * 0.5)
+                    quote_tvl_share = (quote_val_usd / liq_usd * 100.0) if liq_usd > 0 else 0.0
+                    is_balanced_pool = quote_tvl_share >= self.settings.min_quote_tvl_share_pct if is_stable else True
+
+                    if is_liq_drained and is_price_lagging:
+                        if not (is_coherent and is_impactful and is_active_pool and is_balanced_pool):
+                            logger.info(
+                                f"Фильтр шума [{tf_name}] {sym}: Coh={coherence_ratio:.3f} (нужно >={self.settings.min_drain_coherence_ratio}), "
+                                f"Impact={impact_ratio*100:.2f}% (нужно >={self.settings.min_drain_impact_pct*100:.2f}%), "
+                                f"Txns={total_txns_h1} (нужно >={self.settings.min_pool_txns_h1}), "
+                                f"QuoteShare={quote_tvl_share:.2f}% (нужно >={self.settings.min_quote_tvl_share_pct}%)"
+                            )
                         else:
-                            logger.info(f"SHORT [{tf_name}] сигнал по {sym} на кулдауне.")
+                            sig_obj = {
+                                "id": f"{sym.lower()}_{tf_name}_{uuid.uuid4().hex[:6]}",
+                                "timestamp": now,
+                                "timeframe": tf_name,
+                                "timeframe_sec": tf_seconds,
+                                "direction": "SHORT",
+                                "pattern": "LIQ_DRAIN",
+                                "symbol": sym,
+                                "chain": chain,
+                                "pair_address": addr,
+                                "dex_id": dex_id,
+                                "quote_sym": quote_sym,
+                                "quote_chg": round(short_quote_chg, 2),
+                                "base_chg": round(short_base_chg, 2),
+                                "usd_chg": round(short_usd_chg, 2),
+                                "prev_quote_res": max_quote,
+                                "curr_quote_res": quote_res,
+                                "prev_tvl_usd": max_liq_usd,
+                                "curr_tvl_usd": liq_usd,
+                                "price_usd": price_usd,
+                                "price_chg": round(short_price_chg, 2),
+                                "buys_h1": buys_h1,
+                                "sells_h1": sells_h1,
+                                "vol_h1_usd": vol_h1,
+                                "funding_rate": funding_rate,
+                                "binance_funding": binance_fr,
+                                "bybit_funding": bybit_fr,
+                                "exchanges": exchanges,
+                                "coherence_ratio": round(coherence_ratio, 3),
+                                "real_drain_usd": round(real_drain_usd, 2),
+                                "impact_ratio_pct": round(impact_ratio * 100.0, 2),
+                                "total_txns_h1": total_txns_h1,
+                                "quote_tvl_share_pct": round(quote_tvl_share, 2),
+                                "is_squeeze_fuel": False,
+                                "dex_url": url,
+                            }
+
+                            if is_cooldown_expired:
+                                triggered_signals.append(sig_obj)
+                                notify_signal(self.settings.tg_bot_token, self.settings.tg_chat_id, sig_obj)
+                                last_alert_map[tf_name] = now
+                            else:
+                                logger.info(f"SHORT [{tf_name}] сигнал по {sym} на кулдауне.")
 
                     # =========================================================================
                     # 2. ПРОВЕРКА НА ЛОНГ / НАКОПЛЕНИЕ (Сравниваем с МИНИМУМОМ за окно)

@@ -112,6 +112,11 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
 
     tx_ratio = (buys_h1 / sells_h1) if sells_h1 > 0 else float(buys_h1)
 
+    coherence = float(sig.get("coherence_ratio", 1.0))
+    real_drain = float(sig.get("real_drain_usd", 0.0))
+    impact_pct = float(sig.get("impact_ratio_pct", 0.0))
+    total_txns = int(sig.get("total_txns_h1", buys_h1 + sells_h1))
+
     if direction == "SHORT":
         return (
             f"🚨 <b>DEX RADAR | SHORT ALERT ({tf_label})</b>\n"
@@ -124,9 +129,12 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
             f"• Резерв {esc_quote}: <b>{quote_chg:+.1f}%</b> ({prev_q:,.0f} → {curr_q:,.0f})\n"
             f"• TVL пула: <b>${prev_tvl:,.0f} ➔ ${curr_tvl:,.0f}</b>\n"
             f"• Токены в пуле: <b>{base_chg:+.1f}%</b>\n\n"
-            f"📊 <b>Деривативы & Ончейн:</b>\n"
-            f"• Фандинг: {funding_display}\n"
-            f"• Сделки (1ч): 🛒 {buys_h1} пок. / 🏷️ {sells_h1} прод.\n\n"
+            f"🛡️ <b>Качество ликвидности & Импакт:</b>\n"
+            f"• Реальный отток: <b>${real_drain:,.0f}</b> (<b>{impact_pct:.1f}%</b> от часового оборота)\n"
+            f"• Синхронность TVL: <b>{coherence:.2f}</b> (когерентность оттока)\n"
+            f"• Активность DEX (1ч): <b>{total_txns}</b> сделок (🛒 {buys_h1} / 🏷️ {sells_h1})\n\n"
+            f"📊 <b>Деривативы:</b>\n"
+            f"• Фандинг: {funding_display}\n\n"
             f"⚠️ <i>Стейблы выведены из пула за {tf_label}, цена на фьючерсах ещё держится. Высокая вероятность дампа.</i>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"🔗 {links_str}"

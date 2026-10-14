@@ -82,6 +82,18 @@ def search_best_pool(
         liq_usd = safe_float(liq_dict.get("usd"))
         quote_res = safe_float(liq_dict.get("quote"))
         vol_h24 = safe_float(vol_dict.get("h24"))
+        price_usd = safe_float(p.get("priceUsd"))
+        txns_h24 = (p.get("txns") or {}).get("h24") or {}
+        tx_count_24h = int(safe_float(txns_h24.get("buys")) + safe_float(txns_h24.get("sells")))
+
+        # Проверка баланса пула для стейблкоинов: отсекаем фейковые CLMM пулы с нарисованным TVL
+        is_stable_quote = quote_sym in {"USDT", "USDC", "BUSD", "USD", "DAI", "FDUSD", "TUSD"}
+        quote_val_usd = quote_res if is_stable_quote else (liq_usd * 0.5)
+        quote_share = (quote_val_usd / liq_usd) if liq_usd > 0 else 0.0
+
+        # Если пул со стейблкоином, но стейблкоинов меньше 2% от TVL — это фейк/дутый пул (напр. миллиард токенов и 30 USDC)
+        if is_stable_quote and quote_share < 0.02:
+            continue
 
         if (
             base_sym == target_sym_upper
@@ -90,12 +102,15 @@ def search_best_pool(
             and vol_h24 >= min_vol_24h_usd
             and quote_sym in ALLOWED_QUOTE_SYMBOLS
         ):
-            valid_pairs.append((p, liq_usd))
+            # Эффективная ликвидность: не позволяет дутому пулу обойти реальный живой пул
+            effective_liq = min(liq_usd, quote_val_usd * 2.5) if is_stable_quote else liq_usd
+            score = effective_liq * (1.0 + min(vol_h24 / 100_000.0, 5.0))
+            valid_pairs.append((p, score, liq_usd))
 
     if not valid_pairs:
         return None
 
-    best_pair, best_liq = max(valid_pairs, key=lambda item: item[1])
+    best_pair, best_score, best_liq = max(valid_pairs, key=lambda item: item[1])
 
     chain = best_pair.get("chainId", "")
     pair_addr = best_pair.get("pairAddress", "")

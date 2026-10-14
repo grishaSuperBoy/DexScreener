@@ -124,6 +124,13 @@ def format_signal_for_mongo(sig: Dict[str, Any]) -> Dict[str, Any]:
                 "tx_ratio": round(sig.get("buys_h1", 0) / sig.get("sells_h1", 1), 2) if (sig.get("sells_h1") or 0) > 0 else float(sig.get("buys_h1") or 0),
                 "volume_usd": sig.get("vol_h1_usd"),
             },
+            "liquidity_health": {
+                "coherence_ratio": sig.get("coherence_ratio"),
+                "real_drain_usd": sig.get("real_drain_usd"),
+                "impact_ratio_pct": sig.get("impact_ratio_pct"),
+                "quote_tvl_share_pct": sig.get("quote_tvl_share_pct"),
+                "total_txns_h1": sig.get("total_txns_h1"),
+            },
             "funding": {
                 "primary_rate_pct": sig.get("funding_rate"),
                 "binance_rate_pct": sig.get("binance_funding"),

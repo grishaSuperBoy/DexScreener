@@ -428,9 +428,30 @@ def cmd_ui(args):
                     price_delta = ((price_usd - prev_price) / prev_price * 100) if prev_price > 0 else 0.0
                     tx_ratio = (buys_h1 / sells_h1) if sells_h1 > 0 else float(buys_h1)
 
-                    is_short = (
+                    usd_delta = ((liq_usd - prev_liq) / prev_liq * 100) if prev_liq > 0 else 0.0
+                    coherence = abs(usd_delta) / abs(quote_delta) if abs(quote_delta) > 0.001 else 1.0
+
+                    is_stable = str(info.get("quote_symbol") or "USDC").upper() in {"USDT", "USDC", "BUSD", "USD", "DAI", "FDUSD", "TUSD"}
+                    quote_drain_usd = abs(prev_quote - quote_res) if is_stable else 0.0
+                    tvl_drain_usd = abs(prev_liq - liq_usd)
+                    real_drain_usd = max(tvl_drain_usd, quote_drain_usd)
+                    hourly_vol = ((info.get("binance_vol", 0.0) + info.get("bybit_vol", 0.0)) / 24.0) + float(st.get("vol_h1_usd") or 0.0)
+                    impact_ratio = (real_drain_usd / hourly_vol) if hourly_vol > 0 else 0.0
+
+                    quote_val_usd = quote_res if is_stable else (liq_usd * 0.5)
+                    quote_tvl_share = (quote_val_usd / liq_usd * 100.0) if liq_usd > 0 else 0.0
+                    total_txns = buys_h1 + sells_h1
+
+                    is_short_raw = (
                         quote_delta <= settings.liq_drop_threshold_pct
                         and settings.max_price_drop_pct <= price_delta <= settings.max_price_pump_pct
+                    )
+                    is_short = (
+                        is_short_raw
+                        and coherence >= settings.min_drain_coherence_ratio
+                        and impact_ratio >= settings.min_drain_impact_pct
+                        and total_txns >= settings.min_pool_txns_h1
+                        and (quote_tvl_share >= settings.min_quote_tvl_share_pct if is_stable else True)
                     )
 
                     is_squeeze = (
@@ -470,6 +491,10 @@ def cmd_ui(args):
                         "tx_ratio": round(tx_ratio, 2),
                         "binance_vol": info.get("binance_vol", 0),
                         "bybit_vol": info.get("bybit_vol", 0),
+                        "coherence_ratio": round(coherence, 3),
+                        "real_drain_usd": round(real_drain_usd, 2),
+                        "impact_ratio_pct": round(impact_ratio * 100.0, 2),
+                        "quote_tvl_share_pct": round(quote_tvl_share, 2),
                         "pair_address": info.get("pair_address"),
                         "url": info.get("url"),
                         "is_alert": is_short or is_long,

@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     max_price_pump_pct: float = 4.0  # Верхний порог цены (не улетела выше +4.0%)
     track_mode: Literal["quote", "usd", "both"] = "quote"
 
+    # Динамические фильтры качества ликвидности (Защита от фейковых и мертвых пулов)
+    min_drain_coherence_ratio: float = 0.15  # Синхронность: TVL должен упасть хотя бы на 15% от падения котировки
+    min_drain_impact_pct: float = 0.015  # Рыночный импакт: отток >= 1.5% от среднечасового оборота (CEX+DEX)
+    min_pool_txns_h1: int = 5  # Активность: минимум 5 сделок на пуле за последний час
+    min_quote_tvl_share_pct: float = 2.0  # Баланс: резерв котировки должен составлять >= 2% от TVL пула
+
     # Пороги для ЛОНГА / НАКОПЛЕНИЯ (Памп-радар)
     enable_long_signals: bool = True
     lp_inject_quote_pct: float = 12.0  # Тихая заливка LP: стейблы выросли на +12%+

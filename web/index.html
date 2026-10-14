@@ -817,6 +817,14 @@
               </div>
             </div>
 
+            ${s.real_drain_usd ? `
+            <div class="flex items-center justify-between gap-2 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
+              <span>💸 Отток: <b class="text-white">$${Math.round(s.real_drain_usd).toLocaleString()}</b> (${s.impact_ratio_pct || 0}% об/ч)</span>
+              <span>🌊 Когерентность: <b class="text-emerald-400">${s.coherence_ratio || 0}</b></span>
+              <span>⚡ Сделки 1ч: <b class="text-white">${s.total_txns_h1 || ((s.buys_h1 || 0) + (s.sells_h1 || 0))}</b></span>
+            </div>
+            ` : ''}
+
             <div class="flex items-center justify-end gap-2 pt-1 text-xs flex-wrap">
               ${exchLinks}
             </div>
