@@ -47,6 +47,7 @@ def send_telegram_photo(
     photo_bytes: bytes,
     caption: str = "",
     parse_mode: str = "HTML",
+    show_caption_above_media: bool = True,
     timeout: int = 15,
 ) -> bool:
     """Отправляет изображение в Telegram (multipart/form-data)."""
@@ -58,11 +59,13 @@ def send_telegram_photo(
         "chat_id": chat_id,
         "parse_mode": parse_mode,
     }
+    if show_caption_above_media:
+        data["show_caption_above_media"] = "true"
     if caption:
         data["caption"] = caption
 
     files = {
-        "photo": ("coinglass_1h.png", photo_bytes, "image/png"),
+        "photo": ("chart.png", photo_bytes, "image/png"),
     }
 
     try:
@@ -78,7 +81,7 @@ def send_telegram_photo(
 
 
 def format_signal_html(sig: Dict[str, Any]) -> str:
-    """Формирует профессиональное красивое HTML-сообщение для Telegram."""
+    """Формирует чистое компактное HTML-сообщение для Telegram под графиком."""
     direction = sig.get("direction", "SHORT")
     pattern = sig.get("pattern", "")
     raw_sym = str(sig.get("symbol", "")).upper()
@@ -86,7 +89,6 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
     esc_chain = html.escape(str(sig.get("chain", "")).upper())
     esc_dex = html.escape(str(sig.get("dex_id") or "DEX").upper())
     esc_quote = html.escape(str(sig.get("quote_sym") or "USDT").upper())
-    esc_url = html.escape(str(sig.get("dex_url") or ""))
 
     quote_chg = float(sig.get("quote_chg", 0.0))
     base_chg = float(sig.get("base_chg", 0.0))
@@ -96,7 +98,7 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
     curr_tvl = float(sig.get("curr_tvl_usd", 0.0))
     price_chg = float(sig.get("price_chg", 0.0))
     price_usd = float(sig.get("price_usd", 0.0))
-    
+
     funding_rate = sig.get("funding_rate")
     binance_fr = sig.get("binance_funding")
     bybit_fr = sig.get("bybit_funding")
@@ -107,31 +109,6 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
     is_squeeze_fuel = bool(sig.get("is_squeeze_fuel", False))
     vol_h1 = float(sig.get("vol_h1_usd", 0.0))
 
-    # Формирование строки фандинга
-    funding_parts = []
-    if binance_fr is not None:
-        funding_parts.append(f"Binance: <code>{binance_fr:+.4f}%</code>")
-    if bybit_fr is not None:
-        funding_parts.append(f"Bybit: <code>{bybit_fr:+.4f}%</code>")
-    
-    if funding_parts:
-        funding_display = " • ".join(funding_parts)
-    elif funding_rate is not None:
-        funding_display = f"<code>{funding_rate:+.4f}%</code>"
-    else:
-        funding_display = "<code>N/A</code>"
-
-    # Ссылки на биржи и аналитику
-    links = []
-    if "binance" in exchanges:
-        links.append(f'<a href="https://www.binance.com/en/futures/{esc_symbol}USDT"><b>🟡 Binance Futures</b></a>')
-    if "bybit" in exchanges:
-        links.append(f'<a href="https://www.bybit.com/trade/usdt/{esc_symbol}USDT"><b>🟠 Bybit Futures</b></a>')
-
-    cg_exch = "Bybit" if ("bybit" in [e.lower() for e in exchanges] and "binance" not in [e.lower() for e in exchanges]) else "Binance"
-    links.append(f'<a href="https://www.coinglass.com/tv/{cg_exch}_{esc_symbol}USDT"><b>👁 CoinGlass (1H)</b></a>')
-    links_str = " | ".join(links)
-
     # Биржевые теги
     exch_badges = []
     if "binance" in exchanges:
@@ -141,15 +118,9 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
     exch_str = " + ".join(exch_badges) if exch_badges else "🟡 Binance"
 
     timeframe = sig.get("timeframe", "1h")
-    if timeframe == "3h":
-        tf_badge = "⏳ <b>3 ЧАСА (Устойчивый тренд)</b>"
-        tf_label = "3ч"
-    else:
-        tf_badge = "⚡️ <b>1 ЧАС (Импульсный сдвиг)</b>"
-        tf_label = "1ч"
+    tf_label = "3ч" if timeframe == "3h" else "1ч"
 
     tx_ratio = (buys_h1 / sells_h1) if sells_h1 > 0 else float(buys_h1)
-
     coherence = float(sig.get("coherence_ratio", 1.0))
     real_drain = float(sig.get("real_drain_usd", 0.0))
     impact_pct = float(sig.get("impact_ratio_pct", 0.0))
@@ -164,48 +135,41 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
         z_block = ""
         if z_quote is not None and z_price is not None:
             z_block = (
-                f"📐 <b>Статистический Z-Score:</b>\n"
+                f"\n📐 <b>Статистический Z-Score:</b>\n"
                 f"• Аномалия резервов: <b>{z_quote:+.2f}σ</b> (стат. выброс)\n"
                 f"• Лаг спот-цены: <b>{z_price:+.2f}σ</b>\n"
-                f"• Z-Дивергенция: <b>+{z_div:.2f}σ</b> (опережение цены)\n\n"
+                f"• Z-Дивергенция: <b>+{z_div:.2f}σ</b> (опережение цены)\n"
             )
 
         return (
             f"🚨 <b>${esc_symbol} / {esc_quote} ({exch_str}) | SHORT ALERT ({tf_label})</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"⏱ Таймфрейм: {tf_badge}\n"
-            f"🌐 Сеть: <code>{esc_chain}</code> • DEX: <b>{esc_dex}</b>\n"
-            f"💵 Спот DEX: <code>${price_usd:.6g}</code> (<b>{price_chg:+.2f}%</b> за {tf_label})\n\n"
+            f"📌 Паттерн: <b>СЛИВ ЛИКВИДНОСТИ (Дамп стейблов)</b>\n"
+            f"⚠️ <i>Стейблы выведены из пула за {tf_label}, цена на CEX ещё держится. Высокая вероятность дампа.</i>\n\n"
             f"💧 <b>Слив ликвидности из пула ({tf_label}):</b>\n"
             f"• Резерв {esc_quote}: <b>{quote_chg:+.1f}%</b> ({prev_q:,.0f} → {curr_q:,.0f})\n"
+            f"• Токены в пуле: <b>{base_chg:+.1f}%</b>\n"
             f"• TVL пула: <b>${prev_tvl:,.0f} ➔ ${curr_tvl:,.0f}</b>\n"
-            f"• Токены в пуле: <b>{base_chg:+.1f}%</b>\n\n"
-            f"{z_block}"
-            f"🛡️ <b>Качество ликвидности & Импакт:</b>\n"
-            f"• Реальный отток: <b>${real_drain:,.0f}</b> (<b>{impact_pct:.1f}%</b> от оборота за {tf_label})\n"
-            f"• Синхронность TVL: <b>{coherence:.2f}</b> (когерентность оттока)\n"
-            f"• Активность DEX (1ч): <b>{total_txns}</b> сделок (🛒 {buys_h1} / 🏷️ {sells_h1})\n\n"
-            f"📊 <b>Деривативы:</b>\n"
-            f"• Фандинг: {funding_display}\n\n"
-            f"⚠️ <i>Стейблы выведены из пула за {tf_label}, цена на фьючерсах ещё держится. Высокая вероятность дампа.</i>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🔗 {links_str}"
+            f"{z_block}\n"
+            f"⚡️ <b>Активность & Импакт:</b>\n"
+            f"• Реальный отток: <b>${real_drain:,.0f}</b> (<b>{impact_pct:.1f}%</b> от оборота {tf_label})\n"
+            f"• Сделки ({tf_label}): 🛒 <b>{buys_h1}</b> / 🏷️ <b>{sells_h1}</b> (всего {total_txns})"
         )
     else:
-        if pattern == "SILENT_LP_ADD":
-            pattern_title = "ТИХАЯ ЗАЛИВКА LP (Инъекция ликвидности)"
-            strategy_tip = "Маркетмейкер расширил глубину пула без пампа цены. Подготовка к разгону."
-        else:
-            pattern_title = "СКРЫТЫЙ ВЫКУП (Пылесос токенов)"
-            strategy_tip = f"Базовые токены выкупаются из пула за {tf_label}. Перевес покупателей x{tx_ratio:.1f}."
+        pattern_title = "ТИХАЯ ЗАЛИВКА LP (Инъекция ликвидности)" if pattern == "SILENT_LP_ADD" else "СКРЫТЫЙ ВЫКУП (Пылесос токенов)"
+        strategy_tip = (
+            "Маркетмейкер расширил глубину пула без пампа цены. Подготовка к разгону."
+            if pattern == "SILENT_LP_ADD"
+            else f"Базовые токены выкупаются из пула за {tf_label}. Перевес покупателей x{tx_ratio:.1f}."
+        )
 
         z_block = ""
         if z_quote is not None:
-            base_line = f"• Токены в пуле: <b>{z_base:+.2f}σ</b> (выгребание)\n" if z_base is not None else ""
-            price_line = f"• Спот-цена: <b>{z_price:+.2f}σ</b> (ранняя точка)\n" if z_price is not None else ""
+            base_line = f"\n• Токены в пуле: <b>{z_base:+.2f}σ</b> (выгребание)" if z_base is not None else ""
+            price_line = f"\n• Спот-цена: <b>{z_price:+.2f}σ</b> (ранняя точка)" if z_price is not None else ""
             z_block = (
-                f"📐 <b>Статистический Z-Score:</b>\n"
-                f"• Приток стейблов: <b>{z_quote:+.2f}σ</b>\n"
+                f"\n📐 <b>Статистический Z-Score:</b>\n"
+                f"• Приток стейблов: <b>{z_quote:+.2f}σ</b>"
                 f"{base_line}"
                 f"{price_line}\n"
             )
@@ -216,30 +180,23 @@ def format_signal_html(sig: Dict[str, Any]) -> str:
             best_fr_str = f"{best_squeeze_fr:+.4f}%" if best_squeeze_fr is not None else ""
             target_exchs = " / ".join(e.capitalize() for e in exchanges) if exchanges else "CEX"
             squeeze_block = (
-                f"\n🔥 <b>ШОРТ-СКВИЗ ТОПЛИВО:</b> <code>{best_fr_str}</code>\n"
-                f"<i>Толпа агрессивно шортит на {target_exchs} — идеальный сетап для выноса!</i>\n"
+                f"\n🔥 <b>ШОРТ-СКВИЗ ТОПЛИВО:</b> <code>{best_fr_str}</code> (шортят на {target_exchs})\n"
             )
 
         return (
             f"🟢 <b>${esc_symbol} / {esc_quote} ({exch_str}) | PUMP & ACCUMULATION ({tf_label})</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"⏱ Таймфрейм: {tf_badge}\n"
             f"📌 Паттерн: <b>{pattern_title}</b>\n"
-            f"🌐 Сеть: <code>{esc_chain}</code> • DEX: <b>{esc_dex}</b>\n"
-            f"💵 Спот DEX: <code>${price_usd:.6g}</code> (<b>{price_chg:+.2f}%</b> за {tf_label})\n\n"
+            f"💡 <i>{strategy_tip}</i>\n\n"
             f"💧 <b>Динамика пула ({tf_label}):</b>\n"
             f"• Приток стейблов: <b>{quote_chg:+.1f}%</b> ({prev_q:,.0f} → {curr_q:,.0f})\n"
             f"• Токены в пуле: <b>{base_chg:+.1f}%</b>\n"
-            f"• TVL пула: <b>${prev_tvl:,.0f} ➔ ${curr_tvl:,.0f}</b>\n\n"
+            f"• TVL пула: <b>${prev_tvl:,.0f} ➔ ${curr_tvl:,.0f}</b>\n"
             f"{z_block}"
-            f"⚡ <b>Активность & Фандинг:</b>\n"
-            f"• Сделки (1ч): 🛒 <b>{buys_h1}</b> пок. / 🏷️ <b>{sells_h1}</b> прод. (x{tx_ratio:.1f})\n"
-            f"• Объём (1ч): <b>${vol_h1:,.0f}</b>\n"
-            f"• Фандинг: {funding_display}"
             f"{squeeze_block}\n"
-            f"💡 <i>{strategy_tip}</i>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🔗 {links_str}"
+            f"⚡️ <b>Активность:</b>\n"
+            f"• Сделки ({tf_label}): 🛒 <b>{buys_h1}</b> пок. / 🏷️ <b>{sells_h1}</b> прод. (x{tx_ratio:.1f})\n"
+            f"• Объём ({tf_label}): <b>${vol_h1:,.0f}</b>"
         )
 
 
@@ -309,15 +266,17 @@ def notify_signal(bot_token: str, chat_id: str, sig: Dict[str, Any]):
             logger.warning(f"Ошибка вызова генератора графика цен: {e}")
 
         if screenshot_bytes:
-            if len(tg_html) <= 1024:
-                send_telegram_photo(bot_token, chat_id, screenshot_bytes, caption=tg_html)
-            else:
-                send_telegram_photo(
-                    bot_token,
-                    chat_id,
-                    screenshot_bytes,
-                    caption=f"📊 <b>${sym.upper()} / USDT ({tf.upper()}) | График цены</b>",
-                )
+            # Отправляем единым сообщением: текст данных сверху, график цены снизу
+            caption = tg_html[:1024]
+            sent = send_telegram_photo(
+                bot_token,
+                chat_id,
+                screenshot_bytes,
+                caption=caption,
+                show_caption_above_media=True,
+            )
+            if not sent:
+                # Если отправка фото не удалась, отправляем текстовым сообщением
                 send_telegram_message(bot_token, chat_id, tg_html, disable_web_page_preview=True)
         else:
             send_telegram_message(bot_token, chat_id, tg_html, disable_web_page_preview=True)
