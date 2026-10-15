@@ -104,17 +104,32 @@ def capture_price_chart(
                         # 1.2 сек пауза для окончательной прорисовки тел свечей
                         page.wait_for_timeout(1200)
 
-                        # Смещаем график влево на ~25% ширины (300px), создавая свободное пространство перед свечами
+                        # 1. Смещаем график влево на ~25% ширины (300px), создавая свободное пространство перед свечами
                         try:
                             page.mouse.move(800, 360)
                             page.mouse.down()
                             page.mouse.move(500, 360, steps=12)
                             page.mouse.up()
+                            page.wait_for_timeout(250)
+
+                            # 2. Поднимаем график вертикальным скроллом на 65px (без сжатия свечей)
+                            page.evaluate("""() => {
+                                try {
+                                    let model = window.chartWidget.model();
+                                    let pane = model.panes()[0];
+                                    let ps = pane.defaultPriceScale();
+                                    ps.setMode({ autoScale: false });
+                                    ps.startScroll(360);
+                                    ps.scrollTo(295);
+                                    ps.endScroll();
+                                } catch (e) {}
+                            }""")
+
                             # Отводим курсор за пределы графика, чтобы скрыть перекрестие и тултипы
                             page.mouse.move(0, 0)
                             page.wait_for_timeout(600)
                         except Exception as drag_err:
-                            logger.debug(f"Не удалось сместить график влево: {drag_err}")
+                            logger.debug(f"Не удалось отрегулировать положение графика: {drag_err}")
 
                         screenshot_bytes = page.screenshot(type="png")
                         page.close()
